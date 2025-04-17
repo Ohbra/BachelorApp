@@ -1,36 +1,108 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# The Bachelor App
+
+![Figma Design](docs/figma-screenshot.png)
+
+## Overview
+
+The Bachelor App is a modern, responsive front-end application built with Next.js, React, and Tailwind CSS. Its purpose is to explore academic topics, connect with professors, and help students discover their Bachelor degree interests. This repository contains the initial UI implementation based on our Figma design—featuring a clean layout, a placeholder hero section, and the foundation for future feature development.
+
+## Features
+
+- **Explore Topics**: Browse and learn about various academic fields.
+- **Connect with Professors**: Reach out to faculty members for guidance and mentorship.
+- **Discover Interests**: Find and refine your Bachelor degree focus areas.
+- **Next.js** for fast server-side rendering and routing.
+- **React** functional components for a modular UI.
+- **Tailwind CSS** for utility-first, responsive styling.
+- **Mobile-first** design to ensure compatibility across devices.
+
+## Screenshot
+
+Below is the initial screenshot from our Figma design, imported into the project under `docs/figma-screenshot.png`:
+
+![Initial Figma Screenshot](docs/figma-screenshot.png)
 
 ## Getting Started
 
-First, run the development server:
+### Prerequisites
+
+- **Node.js** (version 14 or higher)
+- **npm** or **yarn** package manager
+
+### Installation
+
+1. Clone the repository:
+   ```bash
+   git clone https://github.com/<your-username>/<your-repo>.git
+   ```
+2. Navigate to the project directory:
+   ```bash
+   cd <your-repo>
+   ```
+3. Install dependencies:
+   ```bash
+   npm install
+   # or
+   yarn install
+   ```
+
+### Running the App in Development
+
+Start the development server:
 
 ```bash
 npm run dev
 # or
 yarn dev
-# or
-pnpm dev
-# or
-bun dev
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+Open your browser and visit `http://localhost:3000` to view the app.
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+### Building for Production
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+1. Build the optimized production bundle:
+   ```bash
+   npm run build
+   # or
+   yarn build
+   ```
+2. Start the production server:
+   ```bash
+   npm start
+   # or
+   yarn start
+   ```
 
-## Learn More
+## Project Structure
 
-To learn more about Next.js, take a look at the following resources:
+```
+bachelor-app/
+├── docs/                # Project documentation and assets (e.g., Figma screenshot)
+├── pages/               # Next.js pages
+│   └── index.tsx        # Home page with placeholder hero section
+├── components/          # Reusable React components
+│   └── Layout.tsx       # Base layout component
+├── public/              # Static files (images, fonts)
+├── styles/              # Global and component-specific styles
+└── README.md            # Project overview and instructions
+```
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+## Contributing
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+Contributions are welcome! Please follow these steps:
 
-## Deploy on Vercel
+1. Fork the repository.
+2. Create a new branch: `git checkout -b feature/<YourFeature>`.
+3. Commit your changes: `git commit -m "feat(ui): add <YourFeature>"`.
+4. Push to your branch: `git push origin feature/<YourFeature>`.
+5. Open a pull request describing your changes.
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+## License
 
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+This project is licensed under the [MIT License](LICENSE).
+
+## Acknowledgments
+
+- [Next.js Documentation](https://nextjs.org/docs)
+- [Tailwind CSS Documentation](https://tailwindcss.com/docs)
+- Original Figma design by [Your Name or Designer]
