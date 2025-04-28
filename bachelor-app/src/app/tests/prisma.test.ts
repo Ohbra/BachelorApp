@@ -1,13 +1,6 @@
-
-
-//test('fetchRevenue returns revenue data', async () => {
-  //const revenue = await fetchRevenue();
-  //expect(revenue).toBeDefined();
-  //expect(Array.isArray(revenue)).toBe(true);
-//});
-// tests/prisma.test.ts
 import { describe, test, expect, beforeAll, afterAll } from 'vitest'
-import { prismaTest, teardownTestDb } from './utils/test-db'
+import { prismaTest, cleanupTestResources } from './utils/test-db'
+import '../tests/utils/test-env' 
 
 console.log('DATABASE_URL:', process.env.DATABASE_URL)
 
@@ -20,7 +13,7 @@ describe('Database Connection Tests', () => {
 
   // Disconnect after all tes
   afterAll(async () => {
-    await teardownTestDb()
+    await cleanupTestResources()
   })
 
 
