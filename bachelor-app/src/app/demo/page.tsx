@@ -5,9 +5,7 @@ import { ChevronRight } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
-import { Tabs, TabsContent } from "@/components/ui/tabs";
 import { InterestsTags } from "@/components/interests-tags";
-import { NavigationTabs } from "@/components/navigation-tabs";
 import { ProfileCard } from "@/components/profile-card";
 import { SearchBar } from "@/components/search-bar";
 import { TopicCard } from "@/components/topic-card";
@@ -15,6 +13,7 @@ import { TopicCard } from "@/components/topic-card";
 export default function DemoPage() {
   const [expandedTopic, setExpandedTopic] = useState<number | null>(0);
   const [showFilter, setShowFilter] = useState(false);
+  const [activeTab, setActiveTab] = useState("fields");
 
   const toggleExpand = (index: number) => {
     setExpandedTopic(expandedTopic === index ? null : index);
@@ -121,113 +120,146 @@ export default function DemoPage() {
 
       {/* Search and Navigation Section */}
       <div className="mt-8">
-        <Tabs defaultValue="fields" className="w-full">
-          <NavigationTabs defaultValue="fields" />
-          <TabsContent value="fields" className="space-y-4">
-            <SearchBar
-              showFilter={true}
-              placeholder="Search fields"
-              onFilter={() => setShowFilter(!showFilter)}
-            />
-            <div className="grid gap-4 sm:grid-cols-2 md:grid-cols-3">
-              <div className="rounded-md border bg-card p-4 text-card-foreground shadow-sm">
-                <span>data science</span>
-              </div>
-              <div className="rounded-md border bg-card p-4 text-card-foreground shadow-sm">
-                <span>frontend</span>
-              </div>
-              <div className="rounded-md border bg-card p-4 text-card-foreground shadow-sm">
-                <span>backend</span>
-              </div>
-              <div className="rounded-md border bg-card p-4 text-card-foreground shadow-sm">
-                <span>UX design</span>
-              </div>
-              <div className="rounded-md border bg-card p-4 text-card-foreground shadow-sm">
-                <span>economy</span>
-              </div>
-              <div className="rounded-md border bg-card p-4 text-card-foreground shadow-sm">
-                <span>marketing</span>
-              </div>
-            </div>
-          </TabsContent>
+        <div className="w-full">
+          <div className="flex border-b border-white/20 mb-4">
+            {["fields", "professors", "list"].map((tab) => (
+              <button
+                key={tab}
+                onClick={() => setActiveTab(tab)}
+                className={`px-4 py-2 text-sm font-medium transition-all border-b-2 text-white/70 ${
+                  tab === activeTab
+                    ? "border-white text-white"
+                    : "border-transparent hover:text-white"
+                }`}
+              >
+                {tab.charAt(0).toUpperCase() + tab.slice(1)}
+              </button>
+            ))}
+          </div>
 
-          <TabsContent value="professors" className="space-y-4">
-            <SearchBar showFilter={true} placeholder="Search professors" />
+          {activeTab === "fields" && (
             <div className="space-y-4">
-              {[
-                { name: "Name Professor", department: "data science" },
-                { name: "Name Professor", department: "frontend, UX design" },
-                { name: "Name Professor", department: "economy" },
-                { name: "Name Professor", department: "economy" },
-                { name: "Name Professor", department: "economy" },
-              ].map((professor, index) => (
-                <div
-                  key={index}
-                  className="flex items-center justify-between rounded-md border p-4 shadow-sm"
-                >
-                  <div>
-                    <h3 className="font-medium">{professor.name}</h3>
-                    <p className="text-sm text-muted-foreground">
-                      {professor.department}
-                    </p>
-                  </div>
-                  <Button variant="ghost" size="icon" className="rounded-full">
-                    <ChevronRight className="h-5 w-5" />
-                  </Button>
+              <SearchBar
+                showFilter={true}
+                placeholder="Search fields"
+                onFilter={() => setShowFilter(!showFilter)}
+              />
+              <div className="grid gap-4 sm:grid-cols-2 md:grid-cols-3">
+                <div className="rounded-md border bg-card p-4 text-card-foreground shadow-sm">
+                  <span>data science</span>
                 </div>
-              ))}
+                <div className="rounded-md border bg-card p-4 text-card-foreground shadow-sm">
+                  <span>frontend</span>
+                </div>
+                <div className="rounded-md border bg-card p-4 text-card-foreground shadow-sm">
+                  <span>backend</span>
+                </div>
+                <div className="rounded-md border bg-card p-4 text-card-foreground shadow-sm">
+                  <span>UX design</span>
+                </div>
+                <div className="rounded-md border bg-card p-4 text-card-foreground shadow-sm">
+                  <span>economy</span>
+                </div>
+                <div className="rounded-md border bg-card p-4 text-card-foreground shadow-sm">
+                  <span>marketing</span>
+                </div>
+              </div>
             </div>
-          </TabsContent>
+          )}
 
-          <TabsContent value="list" className="space-y-4">
-            <SearchBar showFilter={true} placeholder="Search topics" />
+          {activeTab === "professors" && (
             <div className="space-y-4">
-              {[
-                {
-                  title: "Title topic",
-                  field: "field",
-                  description: "This is a short description of the topic...",
-                  professor: {
-                    name: "Professor Name",
-                    department: "Data Science",
-                  },
-                  tags: ["Data Science", "AI"],
-                },
-                {
-                  title: "Title topic",
-                  field: "field",
-                  description: "This is a short description of the topic...",
-                  professor: {
-                    name: "Professor Name",
-                    department: "UX Design",
-                  },
-                  tags: ["UX Design", "Frontend"],
-                },
-                {
-                  title: "Title topic",
-                  field: "field",
-                  description: "This is a short description of the topic...",
-                  professor: {
-                    name: "Professor Name",
-                    department: "Marketing",
-                  },
-                  tags: ["Marketing", "Economy"],
-                },
-              ].map((topic, index) => (
-                <TopicCard
-                  key={index}
-                  title={topic.title}
-                  field={topic.field}
-                  description={topic.description}
-                  professor={topic.professor}
-                  tags={topic.tags}
-                  expanded={expandedTopic === index}
-                  onExpand={() => toggleExpand(index)}
-                />
-              ))}
+              <SearchBar
+                showFilter={true}
+                placeholder="Search professors"
+                onFilter={() => setShowFilter(!showFilter)}
+              />
+              <div className="space-y-4">
+                {[
+                  { name: "Name Professor", department: "data science" },
+                  { name: "Name Professor", department: "frontend, UX design" },
+                  { name: "Name Professor", department: "economy" },
+                  { name: "Name Professor", department: "economy" },
+                  { name: "Name Professor", department: "economy" },
+                ].map((professor, index) => (
+                  <div
+                    key={index}
+                    className="flex items-center justify-between rounded-md border p-4 shadow-sm"
+                  >
+                    <div>
+                      <h3 className="font-medium">{professor.name}</h3>
+                      <p className="text-sm text-muted-foreground">
+                        {professor.department}
+                      </p>
+                    </div>
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      className="rounded-full"
+                    >
+                      <ChevronRight className="h-5 w-5" />
+                    </Button>
+                  </div>
+                ))}
+              </div>
             </div>
-          </TabsContent>
-        </Tabs>
+          )}
+
+          {activeTab === "list" && (
+            <div className="space-y-4">
+              <SearchBar
+                showFilter={true}
+                placeholder="Search topics"
+                onFilter={() => setShowFilter(!showFilter)}
+              />
+              <div className="space-y-4">
+                {[
+                  {
+                    title: "Title topic",
+                    field: "field",
+                    description: "This is a short description of the topic...",
+                    professor: {
+                      name: "Professor Name",
+                      department: "Data Science",
+                    },
+                    tags: ["Data Science", "AI"],
+                  },
+                  {
+                    title: "Title topic",
+                    field: "field",
+                    description: "This is a short description of the topic...",
+                    professor: {
+                      name: "Professor Name",
+                      department: "UX Design",
+                    },
+                    tags: ["UX Design", "Frontend"],
+                  },
+                  {
+                    title: "Title topic",
+                    field: "field",
+                    description: "This is a short description of the topic...",
+                    professor: {
+                      name: "Professor Name",
+                      department: "Marketing",
+                    },
+                    tags: ["Marketing", "Economy"],
+                  },
+                ].map((topic, index) => (
+                  <TopicCard
+                    key={index}
+                    title={topic.title}
+                    field={topic.field}
+                    description={topic.description}
+                    professor={topic.professor}
+                    tags={topic.tags}
+                    expanded={expandedTopic === index}
+                    onExpand={() => toggleExpand(index)}
+                  />
+                ))}
+              </div>
+            </div>
+          )}
+        </div>
       </div>
     </div>
   );
