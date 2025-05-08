@@ -1,28 +1,26 @@
 import Link from "next/link";
+import { ChevronLeft } from "lucide-react";
 
-import { Button } from "@/components/ui/button";
+interface HeaderProps {
+  title?: string;
+  backUrl?: string;
+  showBack?: boolean;
+}
 
-export function Header() {
+export function Header({
+  title,
+  backUrl = "/",
+  showBack = false,
+}: HeaderProps) {
   return (
-    <header className="border-b">
-      <div className="container mx-auto flex h-16 items-center justify-between px-4">
-        <Link href="/" className="text-xl font-bold">
-          BAP
-        </Link>
-        <nav className="flex items-center gap-4">
-          <Link href="/">
-            <Button variant="ghost">Search</Button>
+    <header className="p-4">
+      <div className="flex items-center mb-6">
+        {showBack && (
+          <Link href={backUrl}>
+            <ChevronLeft className="h-5 w-5 mr-2 text-white" />
           </Link>
-          <Link href="/professor/prof1">
-            <Button variant="ghost">Professors</Button>
-          </Link>
-          <Link href="/topic/topic1">
-            <Button variant="ghost">Topics</Button>
-          </Link>
-          <Link href="/student/student1">
-            <Button variant="ghost">Students</Button>
-          </Link>
-        </nav>
+        )}
+        {title && <h2 className="text-lg font-semibold text-white">{title}</h2>}
       </div>
     </header>
   );
