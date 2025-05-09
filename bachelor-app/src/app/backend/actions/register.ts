@@ -24,7 +24,7 @@ export async function registerUser(formData: FormData) {
     const faculty = formData.get('faculty') as string
     const courseOfStudy = formData.get('courseOfStudy') as string | undefined
     
-    // Validate input
+    // Validate input with zod
     const validatedData = UserSchema.parse({
       name,
       surname,
@@ -44,7 +44,9 @@ export async function registerUser(formData: FormData) {
       return { success: false, message: "User with this email already exists" }
     }
     
-    // Hash password
+
+    // let supabase  handle the passwords, 
+    // this will  not be used in the future 
     const hashedPassword = await bcrypt.hash(validatedData.password, 10)
     
     // Create user
@@ -59,12 +61,13 @@ export async function registerUser(formData: FormData) {
       }
     })
     
-    // Create role-specific profile
+    // Create role-specific profile 
+    // db will generate the id for us
+    // and we will use the user id to create the profile
     if (validatedData.role === "student" && validatedData.courseOfStudy) {
       await prisma.student.create({
         data: {
           id: user.id,
-          student_id: `S${Date.now()}`,
           course_of_study_name: validatedData.courseOfStudy
         }
       })
@@ -72,7 +75,6 @@ export async function registerUser(formData: FormData) {
       await prisma.supervisor.create({
         data: {
           id: user.id,
-          supervisor_id: `P${Date.now()}`
         }
       })
     }
