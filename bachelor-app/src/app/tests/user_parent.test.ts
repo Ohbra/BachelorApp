@@ -32,7 +32,7 @@ const findStudent = await prismaTest.student.findUnique({
     }
   })
 
-  // Disconnect after all tes
+  // Disconnect after all test
   afterAll(async () => {
     await cleanupTestResources()
   })

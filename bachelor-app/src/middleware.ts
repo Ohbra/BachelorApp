@@ -5,6 +5,7 @@ export async function middleware(request: NextRequest) {
   return await updateSession(request)
 }
 
+
 export const config = {
     // TODO: Add more paths to exclude from middleware
   matcher: [
