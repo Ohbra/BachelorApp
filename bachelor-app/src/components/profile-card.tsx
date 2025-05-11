@@ -1,15 +1,6 @@
-import { Mail } from "lucide-react";
+import Link from "next/link";
 
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-import { Badge } from "@/components/ui/badge";
-import { Button } from "@/components/ui/button";
-import {
-  Card,
-  CardContent,
-  CardFooter,
-  CardHeader,
-} from "@/components/ui/card";
-
 interface ProfileCardProps {
   name: string;
   role: string;
@@ -20,6 +11,7 @@ interface ProfileCardProps {
   description?: string;
   avatarSrc?: string;
   isStudent?: boolean;
+  showBackButton?: boolean;
 }
 
 export function ProfileCard({
@@ -41,60 +33,72 @@ export function ProfileCard({
     .toUpperCase();
 
   return (
-    <Card className="w-full max-w-sm">
-      <CardHeader className="flex flex-row items-start gap-4 space-y-0">
-        <Avatar className="h-16 w-16">
+    <div className="max-w-md mx-auto rounded-lg overflow-hidden shadow-lg bg-[#0f0f2e] text-white p-4">
+      <div className="flex items-center mb-4">
+        <div className="flex-1">
+          <h2 className="text-lg font-semibold">{name}</h2>
+          <p className="text-sm opacity-80">
+            {faculty} | {role}
+          </p>
+          {isStudent && <p className="text-sm opacity-80">Matr.-Nr.</p>}
+        </div>
+        <Avatar className="h-16 w-16 bg-[#e0e0ff] ml-4">
           <AvatarImage src={avatarSrc || "/placeholder.svg"} alt={name} />
-          <AvatarFallback>{initials}</AvatarFallback>
+          <AvatarFallback className="text-gray-800">{initials}</AvatarFallback>
         </Avatar>
-        <div className="space-y-1.5">
-          <h3 className="text-xl font-semibold">{name}</h3>
-          <div className="flex flex-col gap-1 text-sm text-muted-foreground">
-            <div className="flex items-center gap-1">
-              {isStudent ? <span>{faculty}</span> : <span>{role}</span>}
-            </div>
-            <div className="flex items-center gap-1">
-              <Mail className="h-3.5 w-3.5" />
-              <span>{email}</span>
-            </div>
-            {phone && (
-              <div className="flex items-center gap-1">
-                <span>{phone}</span>
-              </div>
-            )}
+      </div>
+
+      <div>
+        <p className="text-sm opacity-80">{email}</p>
+        {phone && <p className="text-sm opacity-80">{phone}</p>}
+      </div>
+
+      <div className="mt-2">
+        <Link href={isStudent ? "/student/edit" : "/professor/edit"}>
+          <YellowButton>
+            {isStudent ? "edit profile" : "send email"}
+          </YellowButton>
+        </Link>
+      </div>
+
+      {description && (
+        <div className="mt-4">
+          <p className="text-xs text-white/70 mb-4">{description}</p>
+        </div>
+      )}
+
+      {isStudent && (
+        <div className="mt-4">
+          <h3 className="text-sm font-medium mb-2">Interests:</h3>
+          <div className="flex flex-wrap gap-2 mb-4">
+            {topics.map((topic, index) => (
+              <span
+                key={index}
+                className="text-xs bg-[#1a1a3a] px-3 py-1.5 rounded-full"
+              >
+                {topic}
+              </span>
+            ))}
           </div>
         </div>
-      </CardHeader>
-      <CardContent className="space-y-4">
-        {topics && topics.length > 0 && (
+      )}
+
+      {!isStudent && topics && topics.length > 0 && (
+        <div className="mt-4">
+          <h3 className="text-sm font-medium mb-2">List of offered topics:</h3>
           <div className="space-y-2">
-            <h4 className="text-sm font-medium">List of offered topics:</h4>
-            <div className="flex flex-wrap gap-2">
-              {topics.map((topic, index) => (
-                <Badge key={index} variant="outline" className="text-xs">
-                  {topic}
-                </Badge>
-              ))}
-            </div>
+            {topics.map((topic, index) => (
+              <div key={index} className="bg-[#1a1a3a] p-3 rounded-md">
+                <h4 className="font-medium">Title topic</h4>
+                <p className="text-xs text-white/70">field</p>
+                <p className="text-xs text-white/70">
+                  This is a short description of the topic...
+                </p>
+              </div>
+            ))}
           </div>
-        )}
-        {description && (
-          <div className="space-y-2">
-            <h4 className="text-sm font-medium">
-              How I like to work with my students:
-            </h4>
-            <p className="text-sm text-muted-foreground">{description}</p>
-          </div>
-        )}
-      </CardContent>
-      <CardFooter className="flex gap-2">
-        <Button size="sm" variant="outline" className="w-full text-xs">
-          Send email
-        </Button>
-        <Button size="sm" className="w-full text-xs">
-          Go to the profile
-        </Button>
-      </CardFooter>
-    </Card>
+        </div>
+      )}
+    </div>
   );
 }

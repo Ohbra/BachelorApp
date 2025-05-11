@@ -1,166 +1,228 @@
 "use client";
 
 import { useState } from "react";
-import { ChevronRight } from "lucide-react";
+import { Search, ChevronRight } from "lucide-react";
 import Link from "next/link";
 
-import { NavigationTabs } from "@/components/navigation-tabs";
-import { SearchBar } from "@/components/search-bar";
-import { Tabs, TabsContent } from "@/components/ui/tabs";
-import { Button } from "@/components/ui/button";
-
 export default function Home() {
-  const [showFilter, setShowFilter] = useState(false);
+  const [activeTab, setActiveTab] = useState("fields");
+  const [searchQuery, setSearchQuery] = useState("");
+  const [expandedTopic, setExpandedTopic] = useState<number | null>(null);
+
+  const toggleExpand = (index: number) => {
+    setExpandedTopic(expandedTopic === index ? null : index);
+  };
 
   return (
-    <main className="container mx-auto p-4">
-      <div className="mb-8 space-y-4">
-        <h1 className="text-2xl font-bold">Bachelor Academic Platform</h1>
-        <p className="text-muted-foreground">
-          Explore topics, connect with professors, and find your Bachelor
-          academic interests
-        </p>
-      </div>
+    <main className="max-w-md mx-auto bg-[#0B0021] min-h-screen text-white">
+      <div className="p-6">
+        {/* Search bar */}
+        <div className="relative w-full mb-6">
+          <Search className="absolute left-4 top-1/2 transform -translate-y-1/2 h-5 w-5 text-white/70" />
+          <input
+            type="search"
+            placeholder="Search"
+            className="w-full bg-transparent border border-white/30 rounded-full text-white py-3 pl-12 pr-4 placeholder:text-white/70"
+            onChange={(e) => setSearchQuery(e.target.value)}
+          />
+        </div>
 
-      <div className="mx-auto max-w-4xl">
-        <Tabs defaultValue="fields" className="w-full">
-          <NavigationTabs defaultValue="fields" />
-          <TabsContent value="fields" className="space-y-4">
-            <SearchBar
-              showFilter={true}
-              placeholder="Search fields"
-              onFilter={() => setShowFilter(!showFilter)}
-            />
-            <div className="grid gap-4 sm:grid-cols-2 md:grid-cols-3">
-              <div className="rounded-md border bg-card p-4 text-card-foreground shadow-sm">
-                <span>data science</span>
-              </div>
-              <div className="rounded-md border bg-card p-4 text-card-foreground shadow-sm">
-                <span>frontend</span>
-              </div>
-              <div className="rounded-md border bg-card p-4 text-card-foreground shadow-sm">
-                <span>backend</span>
-              </div>
-              <div className="rounded-md border bg-card p-4 text-card-foreground shadow-sm">
-                <span>UX design</span>
-              </div>
-              <div className="rounded-md border bg-card p-4 text-card-foreground shadow-sm">
-                <span>economy</span>
-              </div>
-              <div className="rounded-md border bg-card p-4 text-card-foreground shadow-sm">
-                <span>marketing</span>
-              </div>
-            </div>
-          </TabsContent>
-          <TabsContent value="professors" className="space-y-4">
-            <SearchBar showFilter={true} placeholder="Search professors" />
-            <div className="space-y-4">
-              {[
-                {
-                  id: "prof1",
-                  name: "Name Professor",
-                  department: "data science",
-                },
-                {
-                  id: "prof2",
-                  name: "Name Professor",
-                  department: "frontend, UX design",
-                },
-                {
-                  id: "prof3",
-                  name: "Name Professor",
-                  department: "economy",
-                },
-                {
-                  id: "prof4",
-                  name: "Name Professor",
-                  department: "economy",
-                },
-                {
-                  id: "prof5",
-                  name: "Name Professor",
-                  department: "economy",
-                },
-              ].map((professor, index) => (
-                <Link href={`/professor/${professor.id}`} key={index}>
-                  <div className="flex items-center justify-between rounded-md border p-4 shadow-sm hover:bg-muted/50 transition-colors">
-                    <div>
-                      <h3 className="font-medium">{professor.name}</h3>
-                      <p className="text-sm text-muted-foreground">
-                        {professor.department}
-                      </p>
-                    </div>
-                    <Button
-                      variant="ghost"
-                      size="icon"
-                      className="rounded-full"
-                    >
-                      <ChevronRight className="h-5 w-5" />
-                    </Button>
+        {/* Tabs navigation */}
+        <div className="flex mb-6 relative border-b border-white/10">
+          {["fields", "professors", "list"].map((tab) => (
+            <button
+              key={tab}
+              onClick={() => setActiveTab(tab)}
+              className={`flex-1 px-4 py-2 text-sm font-medium transition-all text-white tab-underline ${
+                activeTab === tab ? "active" : ""
+              }`}
+            >
+              {tab}
+            </button>
+          ))}
+        </div>
+
+        {activeTab === "fields" && (
+          <div className="grid grid-cols-2 gap-4">
+            {[
+              { name: "data science", href: "/fields/data-science" },
+              { name: "front-end", href: "/fields/front-end" },
+              { name: "back-end", href: "/fields/back-end" },
+              { name: "UX design", href: "/fields/ux-design" },
+              { name: "economy", href: "/fields/economy" },
+              { name: "marketing", href: "/fields/marketing" },
+            ].map((field) => (
+              <Link key={field.name} href={field.href} className="block">
+                <div className="field-card">
+                  <span className="text-xl font-medium">{field.name}</span>
+                </div>
+              </Link>
+            ))}
+          </div>
+        )}
+
+        {activeTab === "professors" && (
+          <div className="space-y-4">
+            {[
+              {
+                id: "prof1",
+                name: "Name Professor",
+                department: "data science",
+              },
+              {
+                id: "prof2",
+                name: "Name Professor",
+                department: "frontend, UX design",
+              },
+              {
+                id: "prof3",
+                name: "Name Professor",
+                department: "economy",
+              },
+              {
+                id: "prof4",
+                name: "Name Professor",
+                department: "economy",
+              },
+              {
+                id: "prof5",
+                name: "Name Professor",
+                department: "economy",
+              },
+              {
+                id: "prof6",
+                name: "Name Professor",
+                department: "economy",
+              },
+              {
+                id: "prof7",
+                name: "Name Professor",
+                department: "economy",
+              },
+            ].map((professor) => (
+              <Link
+                key={professor.id}
+                href={`/professor/${professor.id}`}
+                className="block"
+              >
+                <div className="list-card flex items-center justify-between rounded-full">
+                  <div>
+                    <h3 className="font-bold text-lg card-title">
+                      {professor.name}
+                    </h3>
+                    <p className="text-sm text-white/70 card-subtitle">
+                      {professor.department}
+                    </p>
                   </div>
-                </Link>
-              ))}
-            </div>
-          </TabsContent>
-          <TabsContent value="list" className="space-y-4">
-            <SearchBar showFilter={true} placeholder="Search topics" />
-            <div className="space-y-4">
-              {[
-                {
-                  id: "topic1",
-                  title: "Title topic",
-                  field: "field",
-                  description: "This is a short description of the topic...",
-                  professor: {
-                    name: "Professor Name",
-                    department: "Data Science",
-                  },
-                  tags: ["Data Science", "AI"],
+                  <ChevronRight className="h-6 w-6 text-white/70 card-icon" />
+                </div>
+              </Link>
+            ))}
+          </div>
+        )}
+
+        {activeTab === "list" && (
+          <div className="space-y-4">
+            {[
+              {
+                id: "topic1",
+                title: "Title topic",
+                field: "field",
+                description: "This is a short description of the topic...",
+                professor: {
+                  name: "Professor Name",
+                  department: "Data Science",
                 },
-                {
-                  id: "topic2",
-                  title: "Title topic",
-                  field: "field",
-                  description: "This is a short description of the topic...",
-                  professor: {
-                    name: "Professor Name",
-                    department: "UX Design",
-                  },
-                  tags: ["UX Design", "Frontend"],
+                tags: ["Data Science", "AI"],
+              },
+              {
+                id: "topic2",
+                title: "Title topic",
+                field: "field",
+                description: "This is a short description of the topic...",
+                professor: {
+                  name: "Professor Name",
+                  department: "UX Design",
                 },
-                {
-                  id: "topic3",
-                  title: "Title topic",
-                  field: "field",
-                  description: "This is a short description of the topic...",
-                  professor: {
-                    name: "Professor Name",
-                    department: "Marketing",
-                  },
-                  tags: ["Marketing", "Economy"],
+                tags: ["UX Design", "Frontend"],
+              },
+              {
+                id: "topic3",
+                title: "Title topic",
+                field: "field",
+                description: "This is a short description of the topic...",
+                professor: {
+                  name: "Professor Name",
+                  department: "Marketing",
                 },
-              ].map((topic, index) => (
-                <Link href={`/topic/${topic.id}`} key={index}>
-                  <div className="flex items-center justify-between rounded-md border p-4 shadow-sm hover:bg-muted/50 transition-colors">
-                    <div>
-                      <h3 className="font-medium">{topic.title}</h3>
-                      <p className="text-sm text-muted-foreground">
-                        {topic.field}
-                      </p>
+                tags: ["Marketing", "Economy"],
+              },
+            ].map((topic, index) => (
+              <div key={topic.id} className="list-card rounded-3xl">
+                <div className="flex justify-between items-start">
+                  <div>
+                    <div className="flex items-center gap-2">
+                      <h3 className="font-medium card-title">{topic.title}</h3>
+                      <button
+                        onClick={() => toggleExpand(index)}
+                        className="p-1 rounded-full"
+                      >
+                        {expandedTopic === index ? (
+                          <ChevronRight className="h-4 w-4 card-icon rotate-90" />
+                        ) : (
+                          <ChevronRight className="h-4 w-4 card-icon" />
+                        )}
+                      </button>
                     </div>
-                    <Button
-                      variant="ghost"
-                      size="icon"
-                      className="rounded-full"
-                    >
-                      <ChevronRight className="h-5 w-5" />
-                    </Button>
+                    <p className="text-xs text-white/70 card-subtitle">
+                      {topic.field}
+                    </p>
+                    <p className="text-xs mt-1 text-white/70 card-subtitle">
+                      {topic.description}
+                    </p>
+
+                    {expandedTopic === index && topic.professor && (
+                      <div className="mt-4 space-y-2">
+                        <h4 className="text-sm font-medium card-title">
+                          Professor
+                        </h4>
+                        <div className="flex flex-col gap-1 text-sm">
+                          <p className="card-title">{topic.professor.name}</p>
+                          <p className="text-white/70 card-subtitle">
+                            {topic.professor.department}
+                          </p>
+                        </div>
+                      </div>
+                    )}
+
+                    {expandedTopic === index &&
+                      topic.tags &&
+                      topic.tags.length > 0 && (
+                        <div className="mt-4">
+                          <div className="flex flex-wrap gap-2">
+                            {topic.tags.map((tag, tagIndex) => (
+                              <span
+                                key={tagIndex}
+                                className="text-xs px-3 py-1 rounded-full bg-white/10 card-subtitle"
+                              >
+                                {tag}
+                              </span>
+                            ))}
+                          </div>
+                        </div>
+                      )}
                   </div>
-                </Link>
-              ))}
-            </div>
-          </TabsContent>
-        </Tabs>
+
+                  {expandedTopic !== index && (
+                    <Link href={`/topic/${topic.id}`}>
+                      <ChevronRight className="h-5 w-5 text-white/70 card-icon" />
+                    </Link>
+                  )}
+                </div>
+              </div>
+            ))}
+          </div>
+        )}
       </div>
     </main>
   );

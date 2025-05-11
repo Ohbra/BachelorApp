@@ -1,115 +1,79 @@
 "use client";
 
-import { useState } from "react";
-import { ArrowLeft } from "lucide-react";
 import Link from "next/link";
-
-import { TopicCard } from "@/components/topic-card";
-import { Button } from "@/components/ui/button";
-import { Card, CardContent } from "@/components/ui/card";
-import { InterestsTags } from "@/components/interests-tags";
+import { ChevronLeft } from "lucide-react";
 
 // This would typically come from a database or API
 const topics = {
   topic1: {
-    title: "Machine Learning Fundamentals",
-    field: "Data Science",
+    title: "Title topic",
+    field: "field",
+    faculty: "Faculty",
     description:
-      "An introduction to the core concepts and algorithms in machine learning, including supervised and unsupervised learning approaches.",
+      "This is the topic description. Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed diam nonummy nibh euismod tincidunt ut laoreet dolore magna aliquam erat volutpat. Ut wisi enim ad minim veniam, quis nostrud exerci tation ullamcorper suscipit lobortis nisl ut aliquip ex ea commodo consequat.",
     professor: {
-      name: "Professor Name",
-      department: "Data Science",
+      name: "Name Professor",
+      email: "email@address.com",
+      phone: "0123456789",
     },
-    tags: ["Data Science", "AI", "Algorithms"],
-    requirements:
-      "Basic knowledge of statistics and programming (preferably Python). Students should be comfortable with linear algebra and calculus concepts.",
-    additionalInfo:
-      "This topic is suitable for students interested in pursuing careers in data science, AI research, or software engineering with a focus on intelligent systems.",
-  },
-  topic2: {
-    title: "User Interface Design Principles",
-    field: "UX Design",
-    description:
-      "Exploring the fundamental principles of effective user interface design and how they impact user experience.",
-    professor: {
-      name: "Professor Name",
-      department: "UX Design",
-    },
-    tags: ["UX Design", "Frontend", "Human-Computer Interaction"],
-    requirements:
-      "Basic understanding of web technologies (HTML, CSS). No prior design experience required, but an interest in visual communication is beneficial.",
-    additionalInfo:
-      "Students will work on practical projects applying design principles to real-world interfaces. Portfolio-building opportunities available.",
-  },
-  topic3: {
-    title: "Digital Marketing Analytics",
-    field: "Marketing",
-    description:
-      "Understanding how to measure, analyze, and optimize digital marketing campaigns using data-driven approaches.",
-    professor: {
-      name: "Professor Name",
-      department: "Marketing",
-    },
-    tags: ["Marketing", "Economy", "Analytics"],
-    requirements:
-      "Familiarity with basic marketing concepts. No technical prerequisites, but comfort with spreadsheets and data analysis is helpful.",
-    additionalInfo:
-      "This topic bridges business strategy and technical implementation, making it ideal for students interested in marketing roles with an analytical focus.",
+    requirements: [
+      "Short description of the needed requirements. Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed diam nonummy nibh euismod tincidunt ut.",
+      "Skills or prior knowledge. Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed diam nonummy nibh euismod tincidunt ut.",
+    ],
+    tags: ["Data science", "Frontend", "Marketing", "AI", "UX/UI Design"],
   },
 };
 
 export default function TopicPage({ params }: { params: { id: string } }) {
-  const [expanded, setExpanded] = useState(true);
   const topic = topics[params.id as keyof typeof topics] || topics.topic1;
 
   return (
-    <div className="container mx-auto p-4">
-      <div className="mb-6">
-        <Link href="/">
-          <Button variant="ghost" className="pl-0">
-            <ArrowLeft className="mr-2 h-4 w-4" />
-            Back to search
-          </Button>
-        </Link>
-      </div>
+    <div className="max-w-md mx-auto bg-[#e6e6ff] min-h-screen text-black">
+      <div className="p-6">
+        {/* Header with back button */}
+        <div className="flex items-center mb-6">
+          <Link href="/">
+            <button className="btn-hover p-1 rounded-full">
+              <ChevronLeft className="h-6 w-6 mr-2" />
+            </button>
+          </Link>
+          <h2 className="text-xl font-bold">{topic.title}</h2>
+        </div>
 
-      <div className="mx-auto max-w-2xl space-y-6">
-        <h1 className="text-2xl font-bold">Topic Details</h1>
+        <div>
+          <p className="text-sm text-gray-600">
+            {topic.faculty} | {topic.field}
+          </p>
+          <p className="text-sm font-medium mt-2">{topic.professor.name}</p>
+          <p className="text-sm">{topic.professor.email}</p>
+          <p className="text-sm">{topic.professor.phone}</p>
+          <button className="btn-hover py-1 px-4 border border-gray-300 rounded-full bg-transparent text-black text-xs mt-4">
+            send email
+          </button>
+        </div>
 
-        <TopicCard
-          title={topic.title}
-          field={topic.field}
-          description={topic.description}
-          professor={topic.professor}
-          tags={topic.tags}
-          expanded={expanded}
-          onExpand={() => setExpanded(!expanded)}
-        />
+        <div className="mt-8">
+          <p className="text-sm mb-6">{topic.description}</p>
 
-        <Card>
-          <CardContent className="pt-6 space-y-4">
-            <div>
-              <h3 className="text-lg font-medium">Requirements</h3>
-              <p className="text-muted-foreground">{topic.requirements}</p>
-            </div>
+          <h3 className="text-lg font-bold mb-3">Requirements:</h3>
+          <ul className="list-disc pl-5 text-sm space-y-3">
+            {topic.requirements.map((req, index) => (
+              <li key={index}>{req}</li>
+            ))}
+          </ul>
 
-            <div>
-              <h3 className="text-lg font-medium">Additional Information</h3>
-              <p className="text-muted-foreground">{topic.additionalInfo}</p>
-            </div>
-
-            <div>
-              <h3 className="text-lg font-medium">Related Topics</h3>
-              <InterestsTags
-                interests={topic.tags.concat([
-                  "Research Methods",
-                  "Data Visualization",
-                ])}
-                variant="outline"
-              />
-            </div>
-          </CardContent>
-        </Card>
+          <h3 className="text-lg font-bold mt-6 mb-3">Tags:</h3>
+          <div className="flex flex-wrap gap-2">
+            {topic.tags.map((tag, index) => (
+              <span
+                key={index}
+                className="hover-card text-sm bg-[#d8d8ff] px-4 py-2 rounded-full shadow-sm"
+              >
+                {tag}
+              </span>
+            ))}
+          </div>
+        </div>
       </div>
     </div>
   );

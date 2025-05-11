@@ -1,7 +1,6 @@
 "use client";
 
 import type React from "react";
-
 import { useState } from "react";
 import { cn } from "@/lib/utils";
 
@@ -24,21 +23,16 @@ export function NavigationTabs({
   };
 
   return (
-    <div
-      className={cn(
-        "inline-flex h-10 items-center justify-center rounded-md bg-muted p-1",
-        className
-      )}
-    >
+    <div className={cn("flex border-b border-white/20", className)}>
       {["fields", "professors", "list"].map((tab) => (
         <button
           key={tab}
           onClick={() => handleTabChange(tab)}
           className={cn(
-            "inline-flex items-center justify-center whitespace-nowrap rounded-sm px-3 py-1.5 text-sm font-medium transition-all focus-visible:outline-none disabled:pointer-events-none disabled:opacity-50",
+            "px-4 py-2 text-sm font-medium transition-all border-b-2 text-white/70",
             activeTab === tab
-              ? "bg-background text-foreground shadow-sm"
-              : "text-muted-foreground hover:bg-background/50"
+              ? "border-white text-white"
+              : "border-transparent hover:text-white"
           )}
         >
           {tab.charAt(0).toUpperCase() + tab.slice(1)}
@@ -61,5 +55,5 @@ export function TabsContent({
 }) {
   if (value !== activeValue) return null;
 
-  return <div className={cn("mt-2", className)}>{children}</div>;
+  return <div className={cn("mt-4", className)}>{children}</div>;
 }
