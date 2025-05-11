@@ -6,14 +6,30 @@ import { redirect } from 'next/navigation'
 import { createClient } from '../backend/utils/server'
 import { z } from "zod"
 
+const ProgramSchema = z.object({
+  courseOfStudy: z.string().min(2, "Study program must be at least 2 characters"),
+  level: z.enum(["bachelor", "master"]),
+})
+
 // email and password are handled by supabase
-const UserSchema = z.object({
+ const UserSchema = z.object({
   name: z.string().min(2, "Name must be at least 2 characters"),
   surname: z.string().min(2, "Surname must be at least 2 characters"),
   role: z.enum(["student", "supervisor"]),
-  faculty: z.string(), // name of the faculty
-  courseOfStudy: z.string().optional() // optional for supervisors 
-})
+  faculty: z.string(),
+  program: ProgramSchema.optional(),
+}).refine(
+  (data) => {
+    if (data.role === 'student') {
+      return !!data.program;
+    }
+    return true;
+  },
+  {
+    message: "Program is required for students",
+    path: ['program'],
+  }
+)
 
 export async function login(formData: FormData) {
   const supabase = await createClient()
@@ -34,7 +50,7 @@ export async function login(formData: FormData) {
   else { // remove console log in production
     console.log("Login successful:", authData.user.id)  }
 
-  const user_id = authData.user.id
+   const user_id = authData.user.id
 
   // Fetch user metadata from user_parent table
   const { data: userMeta, error: userMetaError } = await supabase
@@ -69,6 +85,8 @@ export async function signup(formData: FormData) {
   const role = formData.get('role') as string
   const faculty = formData.get('faculty_name') as string
   const courseOfStudy = formData.get('study_program') as string | undefined
+  const level = formData.get('level') as string | undefined; // e.g., "bachelor" or "master"
+
 
   // Validate with Zod - exclude email and password as Supabase handles those
   const validatedData = UserSchema.parse({
@@ -76,7 +94,14 @@ export async function signup(formData: FormData) {
     surname,
     role,
     faculty,
-    courseOfStudy,
+    ...(role === 'student'
+    ? {
+        program: {
+          courseOfStudy,
+          level,
+        },
+      }
+    : {}),
   })
 
   // Supabase auth signup
@@ -118,7 +143,7 @@ export async function signup(formData: FormData) {
    }
    console.log('authData.user.id:', authData.user.id);
    
-   // function to trigger insert into user_parent
+  // function to trigger insert into user_parent
   if (authData) {
    const { error: insertError } = await supabase.rpc('insert_user_parent', {
    user_id: authData.user.id,
@@ -138,59 +163,84 @@ export async function signup(formData: FormData) {
     }
 }
        // Role-specific inserts
-    if (validatedData.role === "student" && validatedData.courseOfStudy) {
+    if (validatedData.role === "student" && validatedData.program) {
+  const { courseOfStudy, level } = validatedData.program;
+
+  function toTitleCase(str: string) {
+  return str.replace(/\w\S*/g, word =>
+    word.charAt(0).toUpperCase() + word.slice(1).toLowerCase()
+  );
+}
+
+  const formattedCourseName = `${toTitleCase(courseOfStudy)} (${toTitleCase(level)})` ;
+  console.log("Formatted course name:", formattedCourseName);
+ // const formattedCourseName = `${courseOfStudy} (${level.charAt(0).toUpperCase()}${level.slice(1)})`;
 
   try {
-    // Retrieve course ID from the course name with better error handling
     const { data: stdProgramData, error: courseOfStudyError } = await supabase
       .from('course_of_study')
       .select('course_id')
-      .eq('course_name', validatedData.courseOfStudy)
-      .single()
+      .eq('course_name', formattedCourseName)
+      .single(); // safer than ilike when exact name is expected
 
     if (courseOfStudyError || !stdProgramData) {
-      console.error("course of study lookup error:", courseOfStudyError)
-      return { success: false, message: `course not found: ${validatedData.courseOfStudy}` }
+      console.error("course of study lookup error:", courseOfStudyError);
+      return {
+        success: false,
+        message: `Course not found: ${formattedCourseName}`,
+      };
     }
 
-      const { error: studentError } = await supabase
-        .from('student')
-        .insert({
-          student_id: user_id,
-          course_id: stdProgramData.course_id,
-        })
+    const { error: studentError } = await supabase
+      .from('student')
+      .insert({
+        student_id: user_id,
+        course_id: stdProgramData.course_id,
+      });
 
-      if (studentError) {
-        console.error("Student record creation error:", studentError)
-        return { success: false, message: `Failed to create student record: ${studentError.message}` }
-      }
-      console.log("Student record created")
-    }
-    catch(error) {
-    console.error("Unexpected error during signup:", error)
+    if (studentError) {
+      console.error("Student record creation error:", studentError);
+      return {
+        success: false,
+        message: `Failed to create student record: ${studentError.message}`,
+      };
     }
 
-     } 
-     else if (validatedData.role === "supervisor") {
-      const { error: supervisorError } = await supabase
-        .from('supervisor')
-        .insert({
-          supervisor_id: user_id,
-        })
+    console.log("Student record created");
+  } catch (error) {
+    console.error("Unexpected error during signup:", error);
+    return {
+      success: false,
+      message: "Unexpected error occurred during student signup",
+    };
+  }
 
-      if (supervisorError) {
-        console.error("Supervisor record creation error:", supervisorError)
-        return { success: false, message: `Failed to create supervisor record: ${supervisorError.message}` }
-      }
-      
-      console.log("Supervisor record created")
-    }
+} else if (validatedData.role === "supervisor") {
+  const { error: supervisorError } = await supabase
+    .from('supervisor')
+    .insert({
+      supervisor_id: user_id,
+    });
 
+  if (supervisorError) {
+    console.error("Supervisor record creation error:", supervisorError);
+    return {
+      success: false,
+      message: `Failed to create supervisor record: ${supervisorError.message}`,
+    };
+  }
+
+  console.log("Supervisor record created");
+}
+
+// Success case
+console.log("Signup completed successfully");
+ 
     // Success case
     console.log("Signup completed successfully")
     revalidatePath('/', 'layout')
     redirect('/')
-    return { success: true, message: "User registered successfully" }
+  //  return { success: true, message: "User registered successfully" }
     
   } catch (error) {
     // Catch any other errors
@@ -199,22 +249,4 @@ export async function signup(formData: FormData) {
   }
 } 
 
- //// Insert into user_parent with improved error handling
-    //const { data: parentData, error: parentError } = await supabase
-      //.from('user_parent')
-      //.insert({
-        //user_id,
-        //name: validatedData.name,
-        //surname: validatedData.surname,
-        //role: validatedData.role,
-        //timespent: 0,
-        //faculty_id: faculty_id, // Use the retrieved faculty_id
-      //})
-      //.select()
-    //if (parentError) {
-      //console.error("User parent insertion error:", parentError)
-      //return { success: false, message: `Failed to create user profile: ${parentError.message}` }
-    //}
-
-    // console.log("User parent created:", parentData.user_id)
-
+ 
