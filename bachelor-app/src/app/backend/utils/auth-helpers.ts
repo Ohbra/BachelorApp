@@ -4,31 +4,32 @@ import { cookies } from 'next/headers'
 import { NextRequest, NextResponse } from 'next/server'
 
 
-export async function getUserSession(req: NextRequest) {
-  const cookieStore = await cookies()
+export async function getUserSession() {
+  const cookieStore = cookies();
 
   const supabase = createServerClient(
     process.env.NEXT_PUBLIC_SUPABASE_URL!,
     process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
     {
       cookies: {
-        getAll: () => cookieStore.getAll(),
+        getAll: async () => (await cookieStore).getAll(),
         setAll: (cookiesToSet) => {
-          cookiesToSet.forEach(({ name, value, options }) => {
-            cookieStore.set(name, value, options)
-          })
+          cookiesToSet.forEach(async ({ name, value, options }) => {
+            (await cookieStore).set(name, value, options);
+          });
         },
       },
     }
-  )
+  );
 
   const {
     data: { user },
     error,
-  } = await supabase.auth.getUser()
+  } = await supabase.auth.getUser();
 
-  return error || !user ? null : user
+  return error || !user ? null : user;
 }
+
 
 // for anonymous access
 /**
