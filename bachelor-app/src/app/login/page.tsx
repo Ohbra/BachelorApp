@@ -156,7 +156,7 @@ export default function LoginPage() {
   const [isLogin, setIsLogin] = useState(true)
 
   return (
-    <div className="max-w-md mx-auto p-6 bg-white rounded shadow-md">
+    <div className="max-w-md mx-auto rounded-lg overflow-hidden shadow-lg bg-[#0B0021] text-white">
       <h1 className="text-2xl font-bold mb-6">
         {isLogin ? 'Log In' : 'Sign Up'}
       </h1>
