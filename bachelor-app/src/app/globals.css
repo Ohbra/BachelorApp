@@ -216,3 +216,55 @@
 .tab-underline.active:hover::after {
   transform: scaleX(1);
 }
+
+/* New blob animations */
+.blob-yellow {
+  background: radial-gradient(circle, rgba(255, 225, 93, 1) 0%, rgba(255, 225, 93, 0) 70%);
+  filter: blur(40px);
+  animation: blob-move 15s ease-in-out infinite alternate;
+}
+
+.blob-purple {
+  background: radial-gradient(circle, rgba(157, 141, 241, 1) 0%, rgba(157, 141, 241, 0) 70%);
+  filter: blur(40px);
+  animation: blob-move 15s ease-in-out infinite alternate-reverse;
+}
+
+@keyframes blob-move {
+  0% {
+    transform: translate(0, 0) scale(1);
+  }
+  33% {
+    transform: translate(5%, 5%) scale(1.1);
+  }
+  66% {
+    transform: translate(-5%, -5%) scale(0.9);
+  }
+  100% {
+    transform: translate(0, 0) scale(1);
+  }
+}
+
+.onboarding-slide {
+  transition: opacity 0.5s ease-in-out, transform 0.5s ease-in-out;
+}
+
+.onboarding-slide-enter {
+  opacity: 0;
+  transform: translateX(50px);
+}
+
+.onboarding-slide-enter-active {
+  opacity: 1;
+  transform: translateX(0);
+}
+
+.onboarding-slide-exit {
+  opacity: 1;
+  transform: translateX(0);
+}
+
+.onboarding-slide-exit-active {
+  opacity: 0;
+  transform: translateX(-50px);
+}
