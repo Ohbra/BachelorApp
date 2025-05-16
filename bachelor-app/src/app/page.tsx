@@ -1,17 +1,68 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { Search, ChevronRight } from "lucide-react";
 import Link from "next/link";
+import { getFieldsFromTags } from "../app/backend/actions/fields/get-fields";
+import { getProfessors } from "../app/backend/actions/professors/get-professors";
+import { getTopics } from "../app/backend/actions/topics/get-topics";
+
+type Field = {
+  id: string;
+  name: string;
+  slug: string;
+};
+
+type Professor = {
+  id: string;
+  name: string;
+  department: string;
+};
+
+type Topic = {
+  id: string;
+  title: string;
+  field: string;
+  description: string;
+  professor: {
+    name: string;
+    department: string;
+  };
+  tags: string[];
+};
 
 export default function Home() {
   const [activeTab, setActiveTab] = useState("fields");
   const [searchQuery, setSearchQuery] = useState("");
   const [expandedTopic, setExpandedTopic] = useState<number | null>(null);
+  const [fields, setFields] = useState<Field[]>([]);
+  const [professors, setProfessors] = useState<Professor[]>([]);
+  const [topics, setTopics] = useState<Topic[]>([]);
 
   const toggleExpand = (index: number) => {
     setExpandedTopic(expandedTopic === index ? null : index);
   };
+
+  useEffect(() => {
+    async function fetchFields() {
+      const res = await getFieldsFromTags();
+      if (res.success) setFields(res.fields);
+    }
+
+    async function fetchProfessors() {
+      const res = await getProfessors();
+      if (res.success) setProfessors(res.professors);
+    }
+
+    async function fetchTopics() {
+      const res = await getTopics(searchQuery);
+      if (res.success) setTopics(res.topics);
+    }
+
+    if (activeTab === "fields") fetchFields();
+    else if (activeTab === "professors") fetchProfessors();
+    else if (activeTab === "list") fetchTopics();
+  }, [activeTab, searchQuery]);
 
   return (
     <main className="max-w-md mx-auto bg-[#0B0021] min-h-screen text-white">
@@ -44,15 +95,8 @@ export default function Home() {
 
         {activeTab === "fields" && (
           <div className="grid grid-cols-2 gap-4">
-            {[
-              { name: "data science", href: "/fields/data-science" },
-              { name: "front-end", href: "/fields/front-end" },
-              { name: "back-end", href: "/fields/back-end" },
-              { name: "UX design", href: "/fields/ux-design" },
-              { name: "economy", href: "/fields/economy" },
-              { name: "marketing", href: "/fields/marketing" },
-            ].map((field) => (
-              <Link key={field.name} href={field.href} className="block">
+            {fields.map((field) => (
+              <Link key={field.id} href={`/fields/${field.slug}`} className="block">
                 <div className="field-card">
                   <span className="text-xl font-medium">{field.name}</span>
                 </div>
@@ -63,43 +107,7 @@ export default function Home() {
 
         {activeTab === "professors" && (
           <div className="space-y-4">
-            {[
-              {
-                id: "prof1",
-                name: "Name Professor",
-                department: "data science",
-              },
-              {
-                id: "prof2",
-                name: "Name Professor",
-                department: "frontend, UX design",
-              },
-              {
-                id: "prof3",
-                name: "Name Professor",
-                department: "economy",
-              },
-              {
-                id: "prof4",
-                name: "Name Professor",
-                department: "economy",
-              },
-              {
-                id: "prof5",
-                name: "Name Professor",
-                department: "economy",
-              },
-              {
-                id: "prof6",
-                name: "Name Professor",
-                department: "economy",
-              },
-              {
-                id: "prof7",
-                name: "Name Professor",
-                department: "economy",
-              },
-            ].map((professor) => (
+            {professors.map((professor) => (
               <Link
                 key={professor.id}
                 href={`/professor/${professor.id}`}
@@ -123,41 +131,7 @@ export default function Home() {
 
         {activeTab === "list" && (
           <div className="space-y-4">
-            {[
-              {
-                id: "topic1",
-                title: "Title topic",
-                field: "field",
-                description: "This is a short description of the topic...",
-                professor: {
-                  name: "Professor Name",
-                  department: "Data Science",
-                },
-                tags: ["Data Science", "AI"],
-              },
-              {
-                id: "topic2",
-                title: "Title topic",
-                field: "field",
-                description: "This is a short description of the topic...",
-                professor: {
-                  name: "Professor Name",
-                  department: "UX Design",
-                },
-                tags: ["UX Design", "Frontend"],
-              },
-              {
-                id: "topic3",
-                title: "Title topic",
-                field: "field",
-                description: "This is a short description of the topic...",
-                professor: {
-                  name: "Professor Name",
-                  department: "Marketing",
-                },
-                tags: ["Marketing", "Economy"],
-              },
-            ].map((topic, index) => (
+            {topics.map((topic, index) => (
               <div key={topic.id} className="list-card rounded-3xl">
                 <div className="flex justify-between items-start">
                   <div>
@@ -183,9 +157,7 @@ export default function Home() {
 
                     {expandedTopic === index && topic.professor && (
                       <div className="mt-4 space-y-2">
-                        <h4 className="text-sm font-medium card-title">
-                          Professor
-                        </h4>
+                        <h4 className="text-sm font-medium card-title">Professor</h4>
                         <div className="flex flex-col gap-1 text-sm">
                           <p className="card-title">{topic.professor.name}</p>
                           <p className="text-white/70 card-subtitle">
@@ -195,22 +167,20 @@ export default function Home() {
                       </div>
                     )}
 
-                    {expandedTopic === index &&
-                      topic.tags &&
-                      topic.tags.length > 0 && (
-                        <div className="mt-4">
-                          <div className="flex flex-wrap gap-2">
-                            {topic.tags.map((tag, tagIndex) => (
-                              <span
-                                key={tagIndex}
-                                className="text-xs px-3 py-1 rounded-full bg-white/10 card-subtitle"
-                              >
-                                {tag}
-                              </span>
-                            ))}
-                          </div>
+                    {expandedTopic === index && topic.tags?.length > 0 && (
+                      <div className="mt-4">
+                        <div className="flex flex-wrap gap-2">
+                          {topic.tags.map((tag, tagIndex) => (
+                            <span
+                              key={tagIndex}
+                              className="text-xs px-3 py-1 rounded-full bg-white/10 card-subtitle"
+                            >
+                              {tag}
+                            </span>
+                          ))}
                         </div>
-                      )}
+                      </div>
+                    )}
                   </div>
 
                   {expandedTopic !== index && (
