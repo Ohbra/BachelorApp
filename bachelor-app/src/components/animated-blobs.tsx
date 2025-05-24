@@ -88,6 +88,14 @@ export function AnimatedBlobs({
             transform: translate(0, 0) scale(1);
           }
         }
+
+        /* Responsive adjustments */
+        @media (max-width: 768px) {
+          .blob-yellow,
+          .blob-purple {
+            filter: blur(40px);
+          }
+        }
       `}</style>
 
       {variant === "yellow-purple" ? (

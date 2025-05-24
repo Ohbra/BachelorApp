@@ -1,7 +1,8 @@
 "use client";
 
 import { useState } from "react";
-import { ChevronRight } from "lucide-react";
+import { ChevronRight, User } from "lucide-react";
+import Link from "next/link";
 
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
@@ -21,6 +22,16 @@ export default function DemoPage() {
 
   return (
     <div className="container mx-auto p-4">
+      {/* Header with user icon */}
+      <div className="flex justify-end mb-4">
+        <Link
+          href="/student"
+          className="p-2 rounded-full border border-white/30 hover:bg-white/10 transition-colors"
+        >
+          <User className="h-5 w-5 text-white" />
+        </Link>
+      </div>
+
       <div className="grid gap-8 md:grid-cols-2 lg:grid-cols-3">
         {/* Professor Profile Card */}
         <div>

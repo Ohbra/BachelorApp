@@ -1,9 +1,10 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { ChevronRight, ChevronLeft } from "lucide-react";
 import { useRouter } from "next/navigation";
-import { AnimatedBlobs } from "./animated-blobs";
+import { AnimatedBlobsCSS } from "./animated-blobs-css";
+import { useMediaQuery } from "@/hooks/use-media-query";
 
 interface OnboardingSlide {
   title: string;
@@ -32,32 +33,38 @@ export function OnboardingFlow() {
   const [direction, setDirection] = useState<"next" | "prev" | null>(null);
   const [isAnimating, setIsAnimating] = useState(false);
   const router = useRouter();
+  const isDesktop = useMediaQuery("(min-width: 1024px)");
 
-  const goToNextSlide = () => {
+  // Create memoized callback functions to avoid dependency issues
+  const handleNextSlide = useCallback(() => {
     if (isAnimating) return;
 
     if (currentSlide < slides.length - 1) {
       setDirection("next");
       setIsAnimating(true);
       setTimeout(() => {
-        setCurrentSlide(currentSlide + 1);
+        setCurrentSlide((prev) => prev + 1);
         setIsAnimating(false);
       }, 300);
     } else {
       router.push("/get-started");
     }
-  };
+  }, [currentSlide, isAnimating, router]);
 
-  const goToPrevSlide = () => {
+  const handlePrevSlide = useCallback(() => {
     if (isAnimating || currentSlide === 0) return;
 
     setDirection("prev");
     setIsAnimating(true);
     setTimeout(() => {
-      setCurrentSlide(currentSlide - 1);
+      setCurrentSlide((prev) => prev - 1);
       setIsAnimating(false);
     }, 300);
-  };
+  }, [currentSlide, isAnimating]);
+
+  // Also update the goToNextSlide and goToPrevSlide functions to use the callbacks
+  const goToNextSlide = handleNextSlide;
+  const goToPrevSlide = handlePrevSlide;
 
   const goToSlide = (index: number) => {
     if (isAnimating) return;
@@ -74,15 +81,15 @@ export function OnboardingFlow() {
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
       if (e.key === "ArrowRight") {
-        goToNextSlide();
+        handleNextSlide();
       } else if (e.key === "ArrowLeft") {
-        goToPrevSlide();
+        handlePrevSlide();
       }
     };
 
     window.addEventListener("keydown", handleKeyDown);
     return () => window.removeEventListener("keydown", handleKeyDown);
-  }, [currentSlide, isAnimating]);
+  }, [handleNextSlide, handlePrevSlide]);
 
   // Handle swipe navigation for mobile
   useEffect(() => {
@@ -100,10 +107,10 @@ export function OnboardingFlow() {
     const handleTouchEnd = () => {
       if (touchStartX - touchEndX > 50) {
         // Swipe left
-        goToNextSlide();
+        handleNextSlide();
       } else if (touchEndX - touchStartX > 50) {
         // Swipe right
-        goToPrevSlide();
+        handlePrevSlide();
       }
     };
 
@@ -116,70 +123,148 @@ export function OnboardingFlow() {
       document.removeEventListener("touchmove", handleTouchMove);
       document.removeEventListener("touchend", handleTouchEnd);
     };
-  }, [currentSlide, isAnimating]);
+  }, [handleNextSlide, handlePrevSlide]);
 
   return (
-    <div className="flex flex-col h-screen bg-[#0f0f2e] text-white overflow-hidden">
+    <div className="flex flex-col h-screen bg-transparent text-white overflow-hidden relative">
       {/* Animated background blobs */}
-      <AnimatedBlobs variant={slides[currentSlide].variant} />
+      <AnimatedBlobsCSS variant={slides[currentSlide].variant} />
 
-      <div className="flex-1 flex flex-col justify-end p-8 z-10 relative">
+      {/* Add a semi-transparent overlay to ensure text readability if needed */}
+      <div className="absolute inset-0 bg-[#0f0f2e] opacity-30 z-0"></div>
+
+      <div
+        className={`flex flex-col ${
+          isDesktop ? "items-center justify-center" : ""
+        } h-full z-10 relative`}
+      >
+        {/* Content container - centered on desktop, bottom-aligned on mobile */}
         <div
-          className={`transition-all duration-300 ${
-            isAnimating
-              ? direction === "next"
-                ? "opacity-0 translate-x-10"
-                : "opacity-0 -translate-x-10"
-              : "opacity-100 translate-x-0"
-          }`}
+          className={`
+          ${
+            isDesktop
+              ? "max-w-4xl w-full flex items-center justify-between"
+              : "flex-1 flex flex-col justify-end p-6"
+          }
+        `}
         >
-          <h1 className="text-2xl font-bold mb-4">
-            {slides[currentSlide].title}
-          </h1>
-          <p className="text-sm text-white/80 mb-8">
-            {slides[currentSlide].description}
-          </p>
+          <div
+            className={`
+            ${isDesktop ? "max-w-xl" : ""}
+            transition-all duration-300 ${
+              isAnimating
+                ? direction === "next"
+                  ? "opacity-0 translate-x-10"
+                  : "opacity-0 -translate-x-10"
+                : "opacity-100 translate-x-0"
+            }
+          `}
+          >
+            <h1
+              className={`${
+                isDesktop ? "text-5xl" : "text-2xl md:text-4xl"
+              } font-bold mb-4`}
+            >
+              {slides[currentSlide].title}
+            </h1>
+            <p
+              className={`${
+                isDesktop ? "text-xl" : "text-sm md:text-base"
+              } text-white/80 mb-8 max-w-md`}
+            >
+              {slides[currentSlide].description}
+            </p>
+          </div>
+
+          {isDesktop && (
+            <div className="flex space-x-4">
+              {slides.map((_, index) => (
+                <button
+                  key={index}
+                  className={`h-3 rounded-full transition-all duration-300 ${
+                    index <= currentSlide ? "bg-white w-12" : "bg-white/30 w-8"
+                  }`}
+                  onClick={() => goToSlide(index)}
+                  aria-label={`Go to slide ${index + 1}`}
+                  disabled={isAnimating}
+                />
+              ))}
+            </div>
+          )}
         </div>
 
-        <div className="flex justify-between items-center">
+        {/* Navigation buttons - only shown on mobile */}
+        {!isDesktop && (
+          <div className="flex justify-between items-center p-6">
+            <button
+              onClick={goToPrevSlide}
+              className={`p-2 rounded-full transition-opacity ${
+                currentSlide === 0 ? "opacity-0" : "opacity-100"
+              }`}
+              aria-label="Previous slide"
+              disabled={currentSlide === 0 || isAnimating}
+            >
+              <ChevronLeft className="h-6 w-6 md:h-8 md:w-8 text-white" />
+            </button>
+            <button
+              onClick={goToNextSlide}
+              className="p-2 rounded-full"
+              aria-label="Next slide"
+              disabled={isAnimating}
+            >
+              <ChevronRight className="h-6 w-6 md:h-8 md:w-8 text-white" />
+            </button>
+          </div>
+        )}
+
+        {/* Progress indicator - only shown on mobile */}
+        {!isDesktop && (
+          <div className="p-6 md:p-8 flex justify-center">
+            <div className="w-full max-w-xs md:max-w-sm bg-white/20 h-1 rounded-full flex">
+              {slides.map((_, index) => (
+                <button
+                  key={index}
+                  className={`h-full rounded-full transition-all duration-300 ${
+                    index <= currentSlide ? "bg-white" : "bg-transparent"
+                  }`}
+                  style={{ width: `${100 / slides.length}%` }}
+                  onClick={() => goToSlide(index)}
+                  aria-label={`Go to slide ${index + 1}`}
+                  disabled={isAnimating}
+                />
+              ))}
+            </div>
+          </div>
+        )}
+      </div>
+
+      {/* Desktop navigation buttons */}
+      {isDesktop && (
+        <div className="absolute inset-x-0 bottom-12 flex justify-center space-x-8 z-20">
           <button
             onClick={goToPrevSlide}
-            className={`p-2 rounded-full transition-opacity ${
-              currentSlide === 0 ? "opacity-0" : "opacity-100"
+            className={`p-4 rounded-full bg-white/10 hover:bg-white/20 transition-all ${
+              currentSlide === 0
+                ? "opacity-0 pointer-events-none"
+                : "opacity-100"
             }`}
             aria-label="Previous slide"
             disabled={currentSlide === 0 || isAnimating}
           >
-            <ChevronLeft className="h-6 w-6 text-white" />
+            <ChevronLeft className="h-8 w-8 text-white" />
           </button>
           <button
             onClick={goToNextSlide}
-            className="p-2 rounded-full"
+            className="p-4 rounded-full bg-white/10 hover:bg-white/20 transition-all"
             aria-label="Next slide"
             disabled={isAnimating}
           >
-            <ChevronRight className="h-6 w-6 text-white" />
+            <ChevronRight className="h-8 w-8 text-white" />
           </button>
         </div>
-      </div>
-
-      {/* Progress indicator */}
-      <div className="p-6 flex justify-center">
-        <div className="w-full max-w-xs bg-white/20 h-1 rounded-full flex">
-          {slides.map((_, index) => (
-            <button
-              key={index}
-              className={`h-full rounded-full transition-all duration-300 ${
-                index <= currentSlide ? "bg-white" : "bg-transparent"
-              }`}
-              style={{ width: `${100 / slides.length}%` }}
-              onClick={() => goToSlide(index)}
-              aria-label={`Go to slide ${index + 1}`}
-              disabled={isAnimating}
-            />
-          ))}
-        </div>
-      </div>
+      )}
     </div>
   );
 }
+
+export default OnboardingFlow;
