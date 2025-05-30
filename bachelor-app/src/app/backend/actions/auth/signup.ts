@@ -42,7 +42,6 @@ export async function signup(formData: FormData) {
   const courseOfStudy = formData.get('study_program') as string | undefined
   const level = formData.get('level') as string | undefined; // e.g., "bachelor" or "master"
 
-
    try {
     const validatedData = UserSchema.parse({
       name,
@@ -69,11 +68,16 @@ export async function signup(formData: FormData) {
       .eq('faculty_name', validatedData.faculty)
       .single()
 
+    const user_id = authData.user.id
+
     if (facultyError || !facultyData) {
+      const {data: authData, error: authError} = await supabase.auth.admin.deleteUser(user_id)
+      if (authError) {
+        console.error('Failed to delete user from auth:', authError)  
+      } else console.log('Deleted user from auth:', authData)
       return { success: false, message: 'Faculty not found' }
     }
 
-    const user_id = authData.user.id
 
     const { error: insertError } = await supabase.rpc('insert_user_parent', {
       user_id,
@@ -85,8 +89,13 @@ export async function signup(formData: FormData) {
     })
 
     if (insertError) {
+      await supabase.auth.admin.deleteUser(user_id)
+      // console.error('Insert user_parent error:', insertError)
+      // supabase function failed, delete the user so we don't have orphaned users
+      // and users can retry signup
       return { success: false, message: 'Failed to insert user_parent' }
     }
+    
 
     if (validatedData.role === 'student' && validatedData.program) {
       const { courseOfStudy, level } = validatedData.program
@@ -95,10 +104,14 @@ export async function signup(formData: FormData) {
       const { data: stdProgramData, error: courseError } = await supabase
         .from('course_of_study')
         .select('course_id')
-        .eq('course_name', formattedCourseName)
+        .ilike('course_name', formattedCourseName)
         .single()
 
       if (courseError || !stdProgramData) {
+        // console.error('Course selection error: ' + formattedCourseName, courseError)
+        const {data: res, error:resErr}  = await supabase.from('user_parent').delete().eq('user_id', user_id)
+        // delete the user from auth to prevent orphaned users
+        const {data: authData, error: authError} = await supabase.auth.admin.deleteUser(user_id)
         return { success: false, message: 'Course not found' }
       }
 
@@ -108,17 +121,23 @@ export async function signup(formData: FormData) {
       })
 
       if (studentError) {
+        await supabase.from('user_parent').delete().eq('user_id', user_id)
+        console.error('Insert student error:', studentError)
+        await supabase.auth.admin.deleteUser(user_id)
         return { success: false, message: 'Failed to insert student' }
       }
-    } else if (validatedData.role === 'supervisor') {
-      const { error: supervisorError } = await supabase.from('supervisor').insert({
-        supervisor_id: user_id,
-      })
-
-      if (supervisorError) {
-        return { success: false, message: 'Failed to insert supervisor' }
-      }
     }
+     // ! do not delete this code, it is for future use
+     //else if (validatedData.role === 'supervisor') {
+      //const { error: supervisorError } = await supabase.from('supervisor').insert({
+        //supervisor_id: user_id,
+      //})
+//
+      //if (supervisorError) {
+        //console.error('Insert supervisor error:', supervisorError)
+        //return { success: false, message: 'Failed to insert supervisor' }
+      //}
+    //}
 
     revalidatePath('/')
     return { success: true }

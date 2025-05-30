@@ -119,10 +119,10 @@ export default function SignupForm() {
               Select role
             </option>
             <option value="student" className="bg-[#0f0f2e]">
-              Student
+              student
             </option>
             <option value="supervisor" className="bg-[#0f0f2e]">
-              Supervisor
+              supervisor
             </option>
           </select>
         </div>
