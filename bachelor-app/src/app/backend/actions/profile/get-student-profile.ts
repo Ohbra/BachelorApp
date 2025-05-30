@@ -46,7 +46,7 @@ export async function getStudentProfile(studentId: string) {
       faculty: student.user_parent.faculty?.faculty_name ?? null,
       course: student.course_of_study?.course_name ?? null,
       matriculationNumber: student.student_id,
-      description: 'No description provided', // Or extend if you have a field for it
+      description: 'No description provided',
       tags: student.student_tag.map((t) => t.tag_name),
     }
 
