@@ -17,7 +17,7 @@ export type Topic = {
 
 export async function getTopics(searchQuery?: string, studentId?: string) {
   try {
-    // 1️⃣ Fetch normal topics
+    // Fetch normal topics
     const thesisProposals = await prisma.thesis_proposal.findMany({
       where: searchQuery
         ? {
@@ -102,7 +102,7 @@ export async function getTopics(searchQuery?: string, studentId?: string) {
       }
     })
 
-    // 2️⃣ Fetch recommendations if studentId provided
+    // Fetch recommendations if studentId provided
     let recommendedTopics: Topic[] = []
     if (studentId) {
       try {
@@ -139,11 +139,11 @@ export async function getTopics(searchQuery?: string, studentId?: string) {
       }
     }
 
-    // 3️⃣ Remove recommended topics from the normal list to avoid duplicates
+    // Remove recommended topics from the normal list to avoid duplicates
     const recommendedIds = new Set(recommendedTopics.map((r) => r.id))
     const remainingTopics = formattedTopics.filter((topic) => !recommendedIds.has(topic.id))
 
-    // 4️⃣ Create the final list: recommendations first, then the rest
+    // Create the final list: recommendations first, then the rest
     const finalTopics = recommendedTopics.length > 0
       ? [...recommendedTopics, ...remainingTopics]
       : formattedTopics
