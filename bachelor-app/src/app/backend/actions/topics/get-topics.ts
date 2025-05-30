@@ -1,6 +1,7 @@
 'use server'
 
 import { prisma } from '../../prisma/prisma'
+import { RecommendationItem } from '@/app/backend/api/recommendations/route' 
 
 export type Topic = {
   id: string;
@@ -14,8 +15,9 @@ export type Topic = {
   tags: string[];
 }
 
-export async function getTopics(searchQuery?: string) {
+export async function getTopics(searchQuery?: string, studentId?: string) {
   try {
+    // 1️⃣ Fetch normal topics
     const thesisProposals = await prisma.thesis_proposal.findMany({
       where: searchQuery
         ? {
@@ -100,9 +102,55 @@ export async function getTopics(searchQuery?: string) {
       }
     })
 
+    // 2️⃣ Fetch recommendations if studentId provided
+    let recommendedTopics: Topic[] = []
+    if (studentId) {
+      try {
+        const res = await fetch(
+          `${process.env.NEXT_PUBLIC_BASE_URL}/api/recommendations?studentId=${studentId}`,
+          { cache: 'no-store' }
+        )
+        if (!res.ok) throw new Error('Failed to fetch recommendations')
+        const data = await res.json()
+        const recommendations = data.theses as RecommendationItem[]
+
+        // Map recommendations to Topic format
+        recommendedTopics = recommendations.map((rec) => {
+          const thesis = thesisProposals.find((t) => t.thesis_id === rec.id)
+          if (!thesis) return null
+
+          const tags = thesis.thesis_proposal_tag.map((t) => t.tag.tag_name)
+          const user = thesis.supervisor.user_parent
+
+          return {
+            id: thesis.thesis_id,
+            title: thesis.title,
+            field: tags[0] || thesis.thesis_type,
+            description: thesis.description || 'No description provided',
+            professor: {
+              name: `${user?.name ?? ''} ${user?.surname ?? ''}`.trim(),
+              department: user?.faculty?.faculty_name || 'Not specified',
+            },
+            tags,
+          }
+        }).filter((topic): topic is Topic => topic !== null)
+      } catch (err) {
+        console.error('Failed to fetch recommendations:', err)
+      }
+    }
+
+    // 3️⃣ Remove recommended topics from the normal list to avoid duplicates
+    const recommendedIds = new Set(recommendedTopics.map((r) => r.id))
+    const remainingTopics = formattedTopics.filter((topic) => !recommendedIds.has(topic.id))
+
+    // 4️⃣ Create the final list: recommendations first, then the rest
+    const finalTopics = recommendedTopics.length > 0
+      ? [...recommendedTopics, ...remainingTopics]
+      : formattedTopics
+
     return {
       success: true,
-      topics: formattedTopics,
+      topics: finalTopics,
     }
   } catch (error) {
     console.error('Error fetching topics:', error)
