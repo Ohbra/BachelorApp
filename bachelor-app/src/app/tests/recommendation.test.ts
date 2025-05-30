@@ -1,4 +1,3 @@
-// src/app/tests/recommendation.route.test.ts
 import { describe, it, expect, beforeEach, vi, MockInstance } from 'vitest'
 import { GET, type Recommendations } from '@/app/backend/api/recommendations/route'
 import * as prismaModule from '../../app/backend/prisma/prisma' // mocking the actual prisma instance used in route.ts
