@@ -1,6 +1,5 @@
-// src/app/api/recommendations/[student_id]/route.ts
 import { NextResponse } from 'next/server'
-import prisma from '@/app/backend/prisma/prisma'
+import { prisma } from '../../prisma/prisma'
 
 export interface RecommendationItem {
   id: string
@@ -13,16 +12,15 @@ export interface Recommendations {
   professors: RecommendationItem[]
 }
 
-export async function GET(
-  _req: Request,
-  { params }: { params: { student_id: string } }
-) {
-  try {
-    const studentId = params.student_id
-    if (!/^[0-9a-fA-F\-]{36}$/.test(studentId)) {
-      return NextResponse.json({ error: 'Invalid student_id format' }, { status: 400 })
-    }
+export async function GET(req: Request) {
+  const { searchParams } = new URL(req.url)
+  const studentId = searchParams.get('studentId')
 
+  if (!studentId || !/^[0-9a-fA-F\-]{36}$/.test(studentId)) {
+    return NextResponse.json({ error: 'Invalid or missing studentId' }, { status: 400 })
+  }
+
+  try {
     // 1) Fetch student + tags
     const student = await prisma.student.findUnique({
       where: { student_id: studentId },
@@ -47,7 +45,6 @@ export async function GET(
     })
     console.log(`▶️ loaded ${proposals.length} proposals`)
 
-    // If no proposals, short-circuit
     if (proposals.length === 0) {
       return NextResponse.json({ theses: [], professors: [] } as Recommendations)
     }
@@ -75,14 +72,13 @@ export async function GET(
       score: number
     }
     const scored = proposals.map<_Scored>(p => {
-      const tags    = p.thesis_proposal_tag.map(t => t.tag_name)
+      const tags = p.thesis_proposal_tag.map(t => t.tag_name)
       const matched = tags.filter(t => studentTags.includes(t))
 
-      // three components:
-      const rel    = tags.length ? matched.length / tags.length : 0
-      const absN   = matched.length / maxTagCount
+      const rel = tags.length ? matched.length / tags.length : 0
+      const absN = matched.length / maxTagCount
       const idfSum = matched.reduce((sum, t) => sum + (idf[t] || 0), 0)
-      const idfN   = idfSum / (Object.values(idf).reduce((a,b) => a + b, 0) || 1)
+      const idfN = idfSum / (Object.values(idf).reduce((a, b) => a + b, 0) || 1)
 
       const score = 0.4 * rel + 0.3 * absN + 0.3 * idfN
 
@@ -96,7 +92,6 @@ export async function GET(
     })
     console.log('▶️ raw scored:', scored)
 
-    // 6) TEMPORARY: relax to at least 1 matched tag so you see *something*
     const filtered = scored.filter(r => {
       const keep = r.score > 0 && r.matchedTags.length >= 1
       if (!keep) {
@@ -105,14 +100,12 @@ export async function GET(
       return keep
     })
 
-    // 7) Top 5 theses
     const topTheses: RecommendationItem[] = filtered
-      .sort((a,b) => b.score - a.score)
-      .slice(0,5)
+      .sort((a, b) => b.score - a.score)
+      .slice(0, 5)
       .map(r => ({ id: r.id, title: r.title, matchedTags: r.matchedTags }))
 
-    // 8) Aggregate per‐supervisor
-    const profMap = new Map<string,{ sum:number, count:number }>()
+    const profMap = new Map<string, { sum: number, count: number }>()
     for (const r of filtered) {
       const key = r.supervisorName
       const cur = profMap.get(key)
@@ -124,19 +117,18 @@ export async function GET(
       }
     }
 
-    // 9) Top 5 professors
     const topProfs = Array.from(profMap.entries())
       .map(([name]) => ({
         id: name,
         title: name,
-        matchedTags: [] as string[]
+        matchedTags: []
       }))
-      .sort((a,b) => {
+      .sort((a, b) => {
         const avgA = profMap.get(a.id)!.sum / profMap.get(a.id)!.count
         const avgB = profMap.get(b.id)!.sum / profMap.get(b.id)!.count
         return avgB - avgA
       })
-      .slice(0,5)
+      .slice(0, 5)
 
     console.log('▶️ topTheses:', topTheses)
     console.log('▶️ topProfs:', topProfs)
@@ -149,5 +141,3 @@ export async function GET(
     return NextResponse.json({ error: 'Unexpected server error', details: msg }, { status: 500 })
   }
 }
-
-
