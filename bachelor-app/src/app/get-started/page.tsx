@@ -68,16 +68,14 @@ export default function GetStarted() {
                 Login
               </Button>
 
-              <div className="text-center mt-2">
-                <Link
-                  href="/"
-                  className={`${
-                    isDesktop ? "text-lg" : "text-sm md:text-base"
-                  } text-white/70 hover:text-white`}
-                >
-                  Enter as guest
-                </Link>
-              </div>
+              <Button
+                onClick={() => router.push("/")}
+                className={`w-full bg-transparent border border-white hover:bg-white/10 text-white ${
+                  isDesktop ? "py-3 text-lg" : "py-2 md:py-3"
+                }`}
+              >
+                Enter as guest
+              </Button>
             </div>
           </div>
 
