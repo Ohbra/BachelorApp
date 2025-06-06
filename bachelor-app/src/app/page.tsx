@@ -107,6 +107,7 @@ export default function Home() {
         setIsLoading(false)
       }
     }
+  }, [activeTab, isMobile]);
 
     async function fetchTopics() {
       setIsLoading(true)
@@ -142,17 +143,18 @@ export default function Home() {
   const shouldShowLoading = isLoading || !hasLoadedData[activeTab as keyof typeof hasLoadedData]
 
   return (
-    <main className="min-h-screen bg-[#0B0021] text-white">
-      <div className={`mx-auto ${isDesktop ? "max-w-6xl px-8 py-6" : "max-w-md px-6 py-6"}`}>
-        {/* Search bar */}
-        <div className="flex items-center gap-3 mb-8">
-          <div className={`relative flex-1 ${isDesktop ? "max-w-md mx-auto" : ""}`}>
-            <Search className="absolute left-4 top-1/2 transform -translate-y-1/2 h-5 w-5 text-white/70" />
+    <main className="min-h-screen bg-[#110833] text-white">
+      <div className="app-container">
+        {/* Header with search and user icon */}
+        <div className="header">
+          <div className="search-container">
+            <Search className="search-icon" />
             <input
               type="search"
               placeholder="Search"
-              className="w-full bg-transparent border border-white/30 rounded-full text-white py-3 pl-12 pr-4 placeholder:text-white/70"
-              onChange={(e) => setSearchQuery(e.target.value)}
+              value={searchQuery}
+              className="search-input"
+              onChange={(e) => handleSearch(e.target.value)}
             />
           </div>
           <Link href="/student" className="p-2 rounded-full border border-white/30 hover:bg-white/10 transition-colors">
@@ -273,23 +275,36 @@ function TopicCard({
               {expandedTopic === index ? (
                 <ChevronRight className="h-4 w-4 card-icon rotate-90" />
               ) : (
-                <ChevronRight className="h-4 w-4 card-icon" />
+                <div className="professors-list">
+                  {professors.length > 0 ? (
+                    professors.map((professor) => (
+                      <Link
+                        key={professor.id}
+                        href={`/professor/${professor.id}`}
+                        className="block"
+                      >
+                        <div className="professor-card">
+                          <div>
+                            <h3 className="font-bold text-lg card-title">
+                              {professor.name}
+                            </h3>
+                            <p className="text-sm card-subtitle">
+                              {professor.department}
+                            </p>
+                          </div>
+                          <ChevronRight className="h-6 w-6 card-icon" />
+                        </div>
+                      </Link>
+                    ))
+                  ) : (
+                    <p className="text-center text-white/70 py-8">
+                      No professors found
+                    </p>
+                  )}
+                </div>
               )}
-            </button>
-          </div>
-          <p className="text-xs text-white/70 card-subtitle">{topic.field}</p>
-          <p className="text-xs mt-1 text-white/70 card-subtitle">{topic.description}</p>
-
-          {expandedTopic === index && topic.professor && (
-            <div className="mt-4 space-y-2">
-              <h4 className="text-sm font-medium card-title">Professor</h4>
-              <div className="flex flex-col gap-1 text-sm">
-                <p className="card-title">{topic.professor.name}</p>
-                <p className="text-white/70 card-subtitle">{topic.professor.department}</p>
-              </div>
-            </div>
+            </>
           )}
-
           {expandedTopic === index && topic.tags?.length > 0 && (
             <div className="mt-4">
               <div className="flex flex-wrap gap-2">
@@ -303,10 +318,14 @@ function TopicCard({
           )}
         </div>
 
-        {expandedTopic !== index && (
-          <Link href={`/topic/${topic.id}`}>
-            <ChevronRight className="h-5 w-5 text-white/70 card-icon" />
-          </Link>
+        {/* Pagination */}
+        {!isLoading && pagination.totalPages > 1 && (
+          <Pagination
+            currentPage={pagination.currentPage}
+            totalPages={pagination.totalPages}
+            onPageChange={handlePageChange}
+            isLoading={isLoading}
+          />
         )}
       </div>
     </div>
