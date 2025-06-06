@@ -6,7 +6,7 @@ import { getUserSession } from '@/app/backend/utils/auth-helpers'
 
 // Validation schema
 const DeleteThesisSchema = z.object({
-  thesis_id: z.number().int().positive('Invalid thesis ID'),
+  thesis_id: z.string().regex(/^\d+$/, 'Invalid thesis ID'),
 })
 
 export async function deleteThesisProposal(formData: FormData) {
@@ -21,7 +21,7 @@ export async function deleteThesisProposal(formData: FormData) {
       return { success: false, message: 'Only supervisors can delete thesis proposals' }
     }
 
-    const thesis_id = parseInt(formData.get('thesis_id') as string)
+    const thesis_id = formData.get('thesis_id') as string
     const validationResult = DeleteThesisSchema.safeParse({ thesis_id })
 
     if (!validationResult.success) {
@@ -29,11 +29,10 @@ export async function deleteThesisProposal(formData: FormData) {
       return { success: false, message: errorMessage }
     }
 
-    const data = validationResult.data
     const userId = user.id
 
     const existingThesis = await prisma.thesis_proposal.findUnique({
-      where: { thesis_id: data.thesis_id },
+      where: { thesis_id },
     })
 
     if (!existingThesis) {
@@ -45,11 +44,11 @@ export async function deleteThesisProposal(formData: FormData) {
     }
 
     await prisma.thesis_proposal_tag.deleteMany({
-      where: { thesis_id: data.thesis_id },
+      where: { thesis_id },
     })
 
     await prisma.thesis_proposal.delete({
-      where: { thesis_id: data.thesis_id },
+      where: { thesis_id },
     })
 
     return {
