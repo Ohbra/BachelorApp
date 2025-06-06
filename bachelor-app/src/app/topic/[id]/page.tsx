@@ -1,38 +1,50 @@
 "use client";
 
+import { useEffect, useState } from "react";
 import Link from "next/link";
-import { ChevronLeft } from "lucide-react";
-
-// This would typically come from a database or API
-const topics = {
-  topic1: {
-    title: "Title topic",
-    field: "field",
-    faculty: "Faculty",
-    description:
-      "This is the topic description. Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed diam nonummy nibh euismod tincidunt ut laoreet dolore magna aliquam erat volutpat. Ut wisi enim ad minim veniam, quis nostrud exerci tation ullamcorper suscipit lobortis nisl ut aliquip ex ea commodo consequat.",
-    professor: {
-      name: "Name Professor",
-      email: "email@address.com",
-      phone: "0123456789",
-    },
-    requirements: [
-      "Short description of the needed requirements. Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed diam nonummy nibh euismod tincidunt ut.",
-      "Skills or prior knowledge. Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed diam nonummy nibh euismod tincidunt ut.",
-    ],
-    tags: ["Data science", "Frontend", "Marketing", "AI", "UX/UI Design"],
-  },
-};
+import { ChevronLeft } from 'lucide-react';
+import { getTopicDetails, TopicDetails } from "@/app/backend/actions/topics/get-topic-details";
 
 export default function TopicPage({ params }: { params: { id: string } }) {
-  const topic = topics[params.id as keyof typeof topics] || topics.topic1;
+  const [topic, setTopic] = useState<TopicDetails | null>(null);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    async function fetchTopic() {
+      const res = await getTopicDetails(params.id);
+      if (res.success && res.details) {
+        setTopic(res.details);
+      } else {
+        console.error("⚠️ Failed to fetch topic details:", res.message);
+      }
+      setLoading(false);
+    }
+
+    fetchTopic();
+  }, [params.id]);
+
+  if (loading) {
+    return (
+      <div className="text-center text-sm text-gray-500 mt-10">
+        Loading topic details...
+      </div>
+    );
+  }
+
+  if (!topic) {
+    return (
+      <div className="text-center text-sm text-red-500 mt-10">
+        Topic not found.
+      </div>
+    );
+  }
 
   return (
     <div className="max-w-md mx-auto bg-[#e6e6ff] min-h-screen text-black">
       <div className="p-6">
         {/* Header with back button */}
         <div className="flex items-center mb-6">
-          <Link href="/">
+          <Link href="/?tab=topics">
             <button className="btn-hover p-1 rounded-full">
               <ChevronLeft className="h-6 w-6 mr-2" />
             </button>
@@ -42,25 +54,36 @@ export default function TopicPage({ params }: { params: { id: string } }) {
 
         <div>
           <p className="text-sm text-gray-600">
-            {topic.faculty} | {topic.field}
+            {topic.supervisor.faculty} | {topic.field}
           </p>
-          <p className="text-sm font-medium mt-2">{topic.professor.name}</p>
-          <p className="text-sm">{topic.professor.email}</p>
-          <p className="text-sm">{topic.professor.phone}</p>
-          <button className="btn-hover py-1 px-4 border border-gray-300 rounded-full bg-transparent text-black text-xs mt-4">
-            send email
-          </button>
+          <p className="text-sm font-medium mt-2">
+            {topic.supervisor.name} {topic.supervisor.surname}
+          </p>
+          <p className="text-sm">{topic.supervisor.email || "No email"}</p>
+          <p className="text-sm">{topic.supervisor.phone || "No phone"}</p>
+          {topic.supervisor.email && (
+            <button
+              className="btn-hover py-1 px-4 border border-gray-300 rounded-full bg-transparent text-black text-xs mt-4"
+              onClick={() => window.location.href = `mailto:${topic.supervisor.email}`}
+            >
+              send email
+            </button>
+          )}
         </div>
 
         <div className="mt-8">
           <p className="text-sm mb-6">{topic.description}</p>
 
-          <h3 className="text-lg font-bold mb-3">Requirements:</h3>
-          <ul className="list-disc pl-5 text-sm space-y-3">
-            {topic.requirements.map((req, index) => (
-              <li key={index}>{req}</li>
-            ))}
-          </ul>
+          {topic.requirements && (
+            <>
+              <h3 className="text-lg font-bold mb-3">Requirements:</h3>
+              <ul className="list-disc pl-5 text-sm space-y-3">
+                {topic.requirements.split("\n").map((req, index) => (
+                  <li key={index}>{req}</li>
+                ))}
+              </ul>
+            </>
+          )}
 
           <h3 className="text-lg font-bold mt-6 mb-3">Tags:</h3>
           <div className="flex flex-wrap gap-2">

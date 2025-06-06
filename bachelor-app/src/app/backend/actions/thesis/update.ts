@@ -6,7 +6,7 @@ import { getPredefinedTags } from '@/app/backend/lib/tagsCache'
 import { getUserSession } from '@/app/backend/utils/auth-helpers'
 
 const AddTagSchema = z.object({
-  thesis_id: z.number().int().positive("Invalid thesis ID"),
+  thesis_id: z.string().regex(/^\d+$/, "Invalid thesis ID"),
   tag_name: z.string().min(1, "Tag name is required").max(50, "Tag name is too long")
 })
 
@@ -17,7 +17,7 @@ export async function addTagToThesis(formData: FormData) {
       return { success: false, message: "You must be logged in" }
     }
 
-    const thesis_id = parseInt(formData.get('thesis_id') as string)
+    const thesis_id = formData.get('thesis_id') as string
     const tag_name = formData.get('tag_name') as string
 
     const parsed = AddTagSchema.safeParse({ thesis_id, tag_name })
