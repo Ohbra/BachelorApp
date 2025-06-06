@@ -153,7 +153,6 @@ export default function Home() {
         } = await supabase.auth.getUser();
         const studentIdStr = user?.id; // string | undefined
 
-        // Convert string to number or undefined if invalid
         const studentId = studentIdStr ? Number(studentIdStr) : undefined;
 
         const res = await getTopics(searchQuery, studentId);
