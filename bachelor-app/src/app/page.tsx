@@ -1,287 +1,444 @@
 "use client";
 
-import { useEffect, useState } from "react";
-import { useSearchParams, useRouter } from "next/navigation";
+import { useEffect, useState, useCallback, useRef } from "react";
+import { useRouter, useSearchParams } from "next/navigation";
 import { Search, ChevronRight, User } from "lucide-react";
 import Link from "next/link";
 import { getFieldsFromTags } from "../app/backend/actions/fields/get-fields";
 import { getProfessors } from "../app/backend/actions/professors/get-professors";
 import { getTopics } from "../app/backend/actions/topics/get-topics";
 import { useMediaQuery } from "@/hooks/use-media-query";
-import { createClient } from "@supabase/supabase-js";
+import { Pagination } from "@/components/pagination";
+import {
+  FieldsSkeleton,
+  ProfessorsSkeleton,
+  TopicsSkeleton,
+} from "@/components/skeleton-loading";
 
-// Types
-type Field = { id: string; name: string; slug: string };
-type Professor = { id: string; name: string; department: string };
+type Field = {
+  id: string;
+  name: string;
+  slug: string;
+};
+
+type Professor = {
+  id: string;
+  name: string;
+  department: string;
+};
+
 type Topic = {
   id: string;
   title: string;
   field: string;
   description: string;
-  professor: { name: string; department: string };
+  professor: {
+    name: string;
+    department: string;
+  };
   tags: string[];
 };
 
-// Components
-function LoadingSpinner() {
-  return <div className="text-center py-8 text-white/70">Loading...</div>;
-}
-
-function TopicCard({
-  topic,
-  index,
-  expandedTopic,
-  toggleExpand,
-}: {
-  topic: Topic;
-  index: number;
-  expandedTopic: number | null;
-  toggleExpand: (i: number) => void;
-}) {
-  return (
-    <div className="list-card rounded-3xl p-4 border border-white/20">
-      <div className="flex justify-between items-start">
-        <div>
-          <h3 className="font-medium text-white text-lg">{topic.title}</h3>
-          <p className="text-sm text-white/70">{topic.field}</p>
-          <p className="text-xs text-white/50">{topic.professor.name} ({topic.professor.department})</p>
-        </div>
-        <button onClick={() => toggleExpand(index)} className="p-1 rounded-full hover:bg-white/10 transition-colors">
-          <ChevronRight className={`h-4 w-4 transition-transform ${expandedTopic === index ? "rotate-90" : ""}`} />
-        </button>
-      </div>
-      {expandedTopic === index && (
-        <div className="mt-2 text-sm text-white/70">
-          <p>{topic.description}</p>
-          {topic.tags.length > 0 && (
-            <div className="flex flex-wrap mt-1 gap-1">
-              {topic.tags.map((tag) => (
-                <span key={tag} className="bg-white/10 text-white/80 px-2 py-1 rounded text-xs">
-                  {tag}
-                </span>
-              ))}
-            </div>
-          )}
-        </div>
-      )}
-    </div>
-  );
-}
-
 export default function Home() {
-  const searchParams = useSearchParams();
   const router = useRouter();
+  const searchParams = useSearchParams();
   const isDesktop = useMediaQuery("(min-width: 1024px)");
+  const isMobile = useMediaQuery("(max-width: 768px)");
+  const isTablet = useMediaQuery("(min-width: 769px) and (max-width: 1024px)");
 
-  const [activeTab, setActiveTab] = useState("fields");
-  const [searchQuery, setSearchQuery] = useState("");
+  const tabsRef = useRef<HTMLDivElement>(null);
+  const indicatorRef = useRef<HTMLDivElement>(null);
+
+  // Get URL parameters
+  const activeTab = searchParams.get("tab") || "fields";
+  const currentPage = Number.parseInt(searchParams.get("page") || "1");
+  const searchQuery = searchParams.get("search") || "";
+
+  // State
   const [expandedTopic, setExpandedTopic] = useState<number | null>(null);
   const [fields, setFields] = useState<Field[]>([]);
   const [professors, setProfessors] = useState<Professor[]>([]);
   const [topics, setTopics] = useState<Topic[]>([]);
-  const [isLoading, setIsLoading] = useState(false);
-  const [hasLoadedData, setHasLoadedData] = useState({
-    fields: false,
-    professors: false,
-    topics: false,
+  const [isLoading, setIsLoading] = useState(true);
+  const [pagination, setPagination] = useState({
+    totalPages: 0,
+    totalCount: 0,
+    currentPage: 1,
   });
 
-  const supabase = createClient(
-    process.env.NEXT_PUBLIC_SUPABASE_URL!,
-    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
+  // Items per page based on screen size
+  const getItemsPerPage = useCallback(() => {
+    if (isDesktop) {
+      return activeTab === "fields" ? 12 : 15; // More items on desktop
+    } else if (isTablet) {
+      return activeTab === "fields" ? 9 : 10; // Medium number for tablets
+    }
+    return activeTab === "fields" ? 6 : 8; // Fewer items on mobile
+  }, [isDesktop, isTablet, activeTab]);
+
+  // Update tab indicator position
+  const updateTabIndicator = useCallback(() => {
+    if (!tabsRef.current || !indicatorRef.current) return;
+
+    const tabs = ["fields", "professors", "list"];
+    const activeIndex = tabs.indexOf(activeTab);
+    const tabButtons = tabsRef.current.querySelectorAll(".tab-button");
+
+    if (tabButtons[activeIndex]) {
+      const activeButton = tabButtons[activeIndex] as HTMLElement;
+
+      // Get the button's position relative to its parent
+      const buttonRect = activeButton.getBoundingClientRect();
+      const containerRect = tabsRef.current.getBoundingClientRect();
+
+      // Calculate the relative position
+      const relativeLeft = buttonRect.left - containerRect.left;
+      const buttonWidth = buttonRect.width;
+      const buttonCenter = relativeLeft + buttonWidth / 2;
+
+      // Set indicator width based on screen size
+      const indicatorWidth = isMobile ? 60 : 84;
+
+      // Calculate the final position (center the indicator under the button)
+      const indicatorLeft = buttonCenter - indicatorWidth / 2;
+
+      // Apply the position
+      indicatorRef.current.style.width = `${indicatorWidth}px`;
+      indicatorRef.current.style.left = `${indicatorLeft}px`;
+      indicatorRef.current.style.transform = "none"; // Reset transform to use left positioning
+    }
+  }, [activeTab, isMobile]);
+
+  // Update indicator when tab changes or component mounts
+  useEffect(() => {
+    // Small delay to ensure DOM is ready and layout is complete
+    const timer = setTimeout(() => {
+      updateTabIndicator();
+    }, 100);
+    return () => clearTimeout(timer);
+  }, [activeTab, updateTabIndicator]);
+
+  // Update indicator on window resize with debounce
+  useEffect(() => {
+    let resizeTimer: NodeJS.Timeout;
+
+    const handleResize = () => {
+      clearTimeout(resizeTimer);
+      resizeTimer = setTimeout(() => {
+        updateTabIndicator();
+      }, 100);
+    };
+
+    window.addEventListener("resize", handleResize);
+    return () => {
+      window.removeEventListener("resize", handleResize);
+      clearTimeout(resizeTimer);
+    };
+  }, [updateTabIndicator]);
+
+  // Update URL parameters
+  const updateURL = useCallback(
+    (params: { tab?: string; page?: number; search?: string }) => {
+      const newSearchParams = new URLSearchParams(searchParams.toString());
+
+      if (params.tab !== undefined) newSearchParams.set("tab", params.tab);
+      if (params.page !== undefined)
+        newSearchParams.set("page", params.page.toString());
+      if (params.search !== undefined) {
+        if (params.search) {
+          newSearchParams.set("search", params.search);
+        } else {
+          newSearchParams.delete("search");
+        }
+      }
+
+      router.push(`?${newSearchParams.toString()}`, { scroll: false });
+    },
+    [router, searchParams]
   );
+
+  // Handle tab change
+  const handleTabChange = (tab: string) => {
+    updateURL({ tab, page: 1 }); // Reset to page 1 when changing tabs
+  };
+
+  // Handle search
+  const handleSearch = (query: string) => {
+    updateURL({ search: query, page: 1 }); // Reset to page 1 when searching
+  };
+
+  // Handle page change
+  const handlePageChange = (page: number) => {
+    updateURL({ page });
+  };
 
   const toggleExpand = (index: number) => {
     setExpandedTopic(expandedTopic === index ? null : index);
   };
 
-  const handleTabChange = (tab: string) => {
-    setActiveTab(tab);
-    const params = new URLSearchParams(searchParams);
-    params.set("tab", tab);
-    router.push(`/?${params.toString()}`);
-  };
-
-  const handleSearch = (query: string) => {
-    setSearchQuery(query);
-  };
-
+  // Fetch data based on active tab
   useEffect(() => {
-    const tabFromUrl = searchParams.get("tab");
-    if (tabFromUrl && ["fields", "professors", "topics"].includes(tabFromUrl)) {
-      setActiveTab(tabFromUrl);
+    async function fetchData() {
+      setIsLoading(true);
+      const itemsPerPage = getItemsPerPage();
+
+      try {
+        if (activeTab === "fields") {
+          const res = await getFieldsFromTags(
+            currentPage,
+            itemsPerPage,
+            searchQuery
+          );
+          if (res.success) {
+            setFields(res.fields);
+            setPagination({
+              totalPages: res.totalPages,
+              totalCount: res.totalCount,
+              currentPage: res.currentPage,
+            });
+          }
+        } else if (activeTab === "professors") {
+          const res = await getProfessors(
+            currentPage,
+            itemsPerPage,
+            searchQuery
+          );
+          if (res.success) {
+            setProfessors(res.professors);
+            setPagination({
+              totalPages: res.totalPages,
+              totalCount: res.totalCount,
+              currentPage: res.currentPage,
+            });
+          }
+        } else if (activeTab === "list") {
+          // TODO: Get actual student ID from authentication/session
+          const studentId = undefined; // Replace with actual student ID when available
+          const res = await getTopics(
+            searchQuery,
+            currentPage,
+            itemsPerPage,
+            studentId
+          );
+          if (res.success) {
+            setTopics(res.topics);
+            setPagination({
+              totalPages: res.totalPages,
+              totalCount: res.totalCount,
+              currentPage: res.currentPage,
+            });
+          }
+        }
+      } catch (error) {
+        console.error("Error fetching data:", error);
+      } finally {
+        setIsLoading(false);
+      }
     }
-  }, [searchParams]);
 
-  useEffect(() => {
-    const fetchFields = async () => {
-      if (hasLoadedData.fields) return;
-      setIsLoading(true);
-      try {
-        const res = await getFieldsFromTags();
-        if (res.success) {
-          setFields(res.fields);
-          setHasLoadedData((prev) => ({ ...prev, fields: true }));
-        }
-      } catch (error) {
-        console.error("Error fetching fields:", error);
-      } finally {
-        setIsLoading(false);
-      }
-    };
-
-    const fetchProfessors = async () => {
-      if (hasLoadedData.professors) return;
-      setIsLoading(true);
-      try {
-        const res = await getProfessors();
-        if (res.success) {
-          setProfessors(res.professors);
-          setHasLoadedData((prev) => ({ ...prev, professors: true }));
-        }
-      } catch (error) {
-        console.error("Error fetching professors:", error);
-      } finally {
-        setIsLoading(false);
-      }
-    };
-    const fetchTopics = async () => {
-      setIsLoading(true);
-      try {
-        const {
-          data: { user },
-        } = await supabase.auth.getUser();
-        const studentIdStr = user?.id; // string | undefined
-
-        const studentId = studentIdStr ? Number(studentIdStr) : undefined;
-
-        const res = await getTopics(searchQuery, studentId);
-        if (res.success) {
-          setTopics(res.topics);
-          setHasLoadedData((prev) => ({ ...prev, topics: true }));
-        }
-      } catch (error) {
-        console.error("Error fetching topics:", error);
-      } finally {
-        setIsLoading(false);
-      }
-    };
-
-
-    if (activeTab === "fields") fetchFields();
-    else if (activeTab === "professors") fetchProfessors();
-    else if (activeTab === "topics") fetchTopics();
-  }, [activeTab, searchQuery, hasLoadedData, supabase.auth]);
-
-  const shouldShowLoading =
-    isLoading || !hasLoadedData[activeTab as keyof typeof hasLoadedData];
+    fetchData();
+  }, [activeTab, currentPage, searchQuery, getItemsPerPage]);
 
   return (
     <main className="min-h-screen bg-[#110833] text-white">
-      <div className="app-container p-4">
-        {/* Header */}
-        <div className="flex justify-between items-center mb-4">
-          <div className="flex items-center border border-white/20 rounded-full px-3 py-1 gap-2 bg-white/5">
-            <Search className="h-4 w-4 text-white/60" />
+      <div className="app-container">
+        {/* Header with search and user icon */}
+        <div className="header">
+          <div className="search-container">
+            <Search className="search-icon" />
             <input
               type="search"
               placeholder="Search"
               value={searchQuery}
+              className="search-input"
               onChange={(e) => handleSearch(e.target.value)}
-              className="bg-transparent outline-none text-sm text-white placeholder:text-white/50"
             />
           </div>
-          <Link href="/student" className="p-2 rounded-full border border-white/30 hover:bg-white/10 transition-colors">
-            <User className="h-5 w-5 text-white" />
+          <Link href="/student" className="user-button">
+            <User className="h-5 w-5" />
           </Link>
         </div>
 
-        {/* Tabs */}
-        <div className={`flex border-b border-white/10 mb-4 ${isDesktop ? "justify-center" : ""}`}>
-          {["fields", "professors", "topics"].map((tab) => (
-            <button
-              key={tab}
-              onClick={() => handleTabChange(tab)}
-              className={`flex-1 px-4 py-2 text-sm font-medium transition-all tab-underline ${activeTab === tab ? "border-b-2 border-white" : ""
-                } ${isDesktop ? "max-w-[200px]" : ""}`}
-            >
-              {tab}
-            </button>
-          ))}
+        {/* Tabs navigation with animated indicator */}
+        <div className="tabs-container">
+          <div ref={tabsRef} className="tabs-nav">
+            {["fields", "professors", "list"].map((tab) => (
+              <button
+                key={tab}
+                onClick={() => handleTabChange(tab)}
+                className={`tab-button ${activeTab === tab ? "active" : ""}`}
+              >
+                {tab}
+              </button>
+            ))}
+            <div ref={indicatorRef} className="tab-indicator" />
+          </div>
         </div>
 
-        {/* Fields */}
-        {activeTab === "fields" &&
-          (shouldShowLoading ? (
-            <LoadingSpinner />
-          ) : fields.length > 0 ? (
-            <div className={`grid gap-4 ${isDesktop ? "grid-cols-3 max-w-5xl mx-auto" : "grid-cols-2"}`}>
-              {fields.map((field) => (
-                <Link key={field.id} href={`/fields/${field.slug}`} className="block">
-                  <div className="p-4 border border-white/20 rounded-xl hover:bg-white/10 transition-colors">
-                    <span className="text-lg font-medium">{field.name}</span>
-                  </div>
-                </Link>
-              ))}
-            </div>
-          ) : (
-            <p className="text-center text-white/70 py-8">No fields found</p>
-          ))}
+        {/* Content with loading states */}
+        <div className="content-container">
+          {/* Fields tab */}
+          {activeTab === "fields" && (
+            <>
+              {isLoading ? (
+                <FieldsSkeleton />
+              ) : (
+                <div className="fields-grid">
+                  {fields.length > 0 ? (
+                    fields.map((field) => (
+                      <Link
+                        key={field.id}
+                        href={`/fields/${field.slug}`}
+                        className="block"
+                      >
+                        <div className="field-card">
+                          <span className="text-lg font-medium">
+                            {field.name}
+                          </span>
+                        </div>
+                      </Link>
+                    ))
+                  ) : (
+                    <p className="text-center text-white/70 py-8">
+                      No fields found
+                    </p>
+                  )}
+                </div>
+              )}
+            </>
+          )}
 
-        {/* Professors */}
-        {activeTab === "professors" &&
-          (shouldShowLoading ? (
-            <LoadingSpinner />
-          ) : professors.length > 0 ? (
-            <div className={`space-y-4 ${isDesktop ? "max-w-4xl mx-auto" : ""}`}>
-              {professors.map((professor) => (
-                <Link key={professor.id} href={`/professor/${professor.id}`} className="block">
-                  <div className="list-card flex items-center justify-between border border-white/20 rounded-full p-3">
-                    <div>
-                      <h3 className="font-bold text-lg">{professor.name}</h3>
-                      <p className="text-sm text-white/70">{professor.department}</p>
-                    </div>
-                    <ChevronRight className="h-6 w-6 text-white/70" />
-                  </div>
-                </Link>
-              ))}
-            </div>
-          ) : (
-            <p className="text-center text-white/70 py-8">No professors found</p>
-          ))}
+          {/* Professors tab */}
+          {activeTab === "professors" && (
+            <>
+              {isLoading ? (
+                <ProfessorsSkeleton />
+              ) : (
+                <div className="professors-list">
+                  {professors.length > 0 ? (
+                    professors.map((professor) => (
+                      <Link
+                        key={professor.id}
+                        href={`/professor/${professor.id}`}
+                        className="block"
+                      >
+                        <div className="professor-card">
+                          <div>
+                            <h3 className="font-bold text-lg card-title">
+                              {professor.name}
+                            </h3>
+                            <p className="text-sm card-subtitle">
+                              {professor.department}
+                            </p>
+                          </div>
+                          <ChevronRight className="h-6 w-6 card-icon" />
+                        </div>
+                      </Link>
+                    ))
+                  ) : (
+                    <p className="text-center text-white/70 py-8">
+                      No professors found
+                    </p>
+                  )}
+                </div>
+              )}
+            </>
+          )}
 
-        {/* Topics */}
-        {activeTab === "topics" && (
-          <div className={`space-y-4 ${isDesktop ? "max-w-4xl mx-auto" : ""}`}>
-            {shouldShowLoading ? (
-              <LoadingSpinner />
-            ) : topics.length > 0 ? (
-              <>
-                <h2 className="text-lg font-bold text-white/80">Recommended for you</h2>
-                {topics.slice(0, 3).map((topic, index) => (
-                  <TopicCard
-                    key={topic.id}
-                    topic={topic}
-                    index={index}
-                    expandedTopic={expandedTopic}
-                    toggleExpand={toggleExpand}
-                  />
-                ))}
-                <h2 className="text-lg font-bold text-white/80 mt-8">Other topics</h2>
-                {topics.slice(3).map((topic, index) => (
-                  <TopicCard
-                    key={topic.id}
-                    topic={topic}
-                    index={index + 3}
-                    expandedTopic={expandedTopic}
-                    toggleExpand={toggleExpand}
-                  />
-                ))}
-              </>
-            ) : (
-              <p className="text-center text-white/70 py-8">No topics found</p>
-            )}
-          </div>
+          {/* Topics tab */}
+          {activeTab === "list" && (
+            <>
+              {isLoading ? (
+                <TopicsSkeleton />
+              ) : (
+                <div className="topics-list">
+                  {topics.length > 0 ? (
+                    topics.map((topic, index) => (
+                      <div key={topic.id} className="list-card">
+                        <div className="flex justify-between items-start">
+                          <div className="flex-1">
+                            <div className="flex items-center gap-2">
+                              <h3 className="font-medium card-title">
+                                {topic.title}
+                              </h3>
+                              <button
+                                onClick={() => toggleExpand(index)}
+                                className="p-1 rounded-full"
+                              >
+                                {expandedTopic === index ? (
+                                  <ChevronRight className="h-4 w-4 card-icon rotate-90" />
+                                ) : (
+                                  <ChevronRight className="h-4 w-4 card-icon" />
+                                )}
+                              </button>
+                            </div>
+                            <p className="text-xs card-subtitle">
+                              {topic.field}
+                            </p>
+                            <p className="text-xs mt-1 card-subtitle">
+                              {topic.description}
+                            </p>
+
+                            {expandedTopic === index && topic.professor && (
+                              <div className="mt-4 space-y-2">
+                                <h4 className="text-sm font-medium card-title">
+                                  Professor
+                                </h4>
+                                <div className="flex flex-col gap-1 text-sm">
+                                  <p className="card-title">
+                                    {topic.professor.name}
+                                  </p>
+                                  <p className="card-subtitle">
+                                    {topic.professor.department}
+                                  </p>
+                                </div>
+                              </div>
+                            )}
+
+                            {expandedTopic === index &&
+                              topic.tags?.length > 0 && (
+                                <div className="mt-4">
+                                  <div className="flex flex-wrap gap-2">
+                                    {topic.tags.map((tag, tagIndex) => (
+                                      <span
+                                        key={tagIndex}
+                                        className="text-xs px-3 py-1 rounded-full bg-white/10 card-subtitle"
+                                      >
+                                        {tag}
+                                      </span>
+                                    ))}
+                                  </div>
+                                </div>
+                              )}
+                          </div>
+
+                          {expandedTopic !== index && (
+                            <Link href={`/topic/${topic.id}`}>
+                              <ChevronRight className="h-5 w-5 card-icon" />
+                            </Link>
+                          )}
+                        </div>
+                      </div>
+                    ))
+                  ) : (
+                    <p className="text-center text-white/70 py-8">
+                      No topics found
+                    </p>
+                  )}
+                </div>
+              )}
+            </>
+          )}
+        </div>
+
+        {/* Pagination */}
+        {!isLoading && pagination.totalPages > 1 && (
+          <Pagination
+            currentPage={pagination.currentPage}
+            totalPages={pagination.totalPages}
+            onPageChange={handlePageChange}
+            isLoading={isLoading}
+          />
         )}
       </div>
     </main>
