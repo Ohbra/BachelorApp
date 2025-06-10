@@ -1,13 +1,24 @@
 "use client";
 
-import { useEffect, useState, useCallback, useRef } from "react";
+import { useEffect, useState, useCallback, useRef, useMemo } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
-import { Search, ChevronRight, User } from "lucide-react";
+import {
+  Search,
+  ChevronRight,
+  User,
+  Check,
+  X,
+  ChevronDown,
+} from "lucide-react";
 import Link from "next/link";
+import { Button } from "@/components/ui/button";
+import { Badge } from "@/components/ui/badge";
 import { getFieldsFromTags } from "../app/backend/actions/fields/get-fields";
 import { getProfessors } from "../app/backend/actions/professors/get-professors";
 import { getTopics } from "../app/backend/actions/topics/get-topics";
 import { useMediaQuery } from "@/hooks/use-media-query";
+import { useDebouncedValue } from "@/hooks/use-debounced-value";
+import { useDataCache } from "@/hooks/use-data-cache";
 import { Pagination } from "@/components/pagination";
 import {
   FieldsSkeleton,
@@ -48,11 +59,21 @@ export default function Home() {
 
   const tabsRef = useRef<HTMLDivElement>(null);
   const indicatorRef = useRef<HTMLDivElement>(null);
+  const abortControllerRef = useRef<AbortController | null>(null);
 
   // Get URL parameters
   const activeTab = searchParams.get("tab") || "fields";
   const currentPage = Number.parseInt(searchParams.get("page") || "1");
   const searchQuery = searchParams.get("search") || "";
+  const filters = searchParams.getAll("filter");
+
+  // Debounce search query to prevent excessive API calls
+  const debouncedSearchQuery = useDebouncedValue(searchQuery, 300);
+
+  // Data caching hooks - stable across renders
+  const fieldsCache = useDataCache<any>("fields", 2 * 60 * 1000);
+  const professorsCache = useDataCache<any>("professors", 2 * 60 * 1000);
+  const topicsCache = useDataCache<any>("topics", 1 * 60 * 1000);
 
   // State
   const [expandedTopic, setExpandedTopic] = useState<number | null>(null);
@@ -66,17 +87,35 @@ export default function Home() {
     currentPage: 1,
   });
 
-  // Items per page based on screen size
-  const getItemsPerPage = useCallback(() => {
+  // Multi-select fields functionality
+  const [isMultiSelectMode, setIsMultiSelectMode] = useState(false);
+  const [selectedFields, setSelectedFields] = useState<Set<string>>(new Set());
+  const [selectionLimitReached, setSelectionLimitReached] = useState(false);
+  const MAX_FIELD_SELECTIONS = 5;
+
+  // Filter display state for list tab
+  const [showAllFilters, setShowAllFilters] = useState(false);
+  const visibleFilterCount = isMobile ? 1 : isDesktop ? 3 : 2;
+  const hasHiddenFilters = filters.length > visibleFilterCount;
+
+  // Stable items per page calculation
+  const itemsPerPage = useMemo(() => {
     if (isDesktop) {
-      return activeTab === "fields" ? 12 : 15; // More items on desktop
+      return activeTab === "fields" ? 12 : 15;
     } else if (isTablet) {
-      return activeTab === "fields" ? 9 : 10; // Medium number for tablets
+      return activeTab === "fields" ? 9 : 10;
     }
-    return activeTab === "fields" ? 6 : 8; // Fewer items on mobile
+    return activeTab === "fields" ? 6 : 8;
   }, [isDesktop, isTablet, activeTab]);
 
-  // Update tab indicator position
+  // Stable cache key
+  const cacheKey = useMemo(() => {
+    const searchKey = debouncedSearchQuery || "no-search";
+    const filtersKey =
+      filters.length > 0 ? filters.sort().join(",") : "no-filters";
+    return `${activeTab}-${currentPage}-${itemsPerPage}-${searchKey}-${filtersKey}`;
+  }, [activeTab, currentPage, itemsPerPage, debouncedSearchQuery, filters]);
+
   const updateTabIndicator = useCallback(() => {
     if (!tabsRef.current || !indicatorRef.current) return;
 
@@ -86,158 +125,325 @@ export default function Home() {
 
     if (tabButtons[activeIndex]) {
       const activeButton = tabButtons[activeIndex] as HTMLElement;
+      const tabsContainer = tabsRef.current;
 
-      // Get the button's position relative to its parent
+      const containerRect = tabsContainer.getBoundingClientRect();
       const buttonRect = activeButton.getBoundingClientRect();
-      const containerRect = tabsRef.current.getBoundingClientRect();
 
-      // Calculate the relative position
-      const relativeLeft = buttonRect.left - containerRect.left;
+      const leftPosition = buttonRect.left - containerRect.left;
       const buttonWidth = buttonRect.width;
-      const buttonCenter = relativeLeft + buttonWidth / 2;
 
-      // Set indicator width based on screen size
-      const indicatorWidth = isMobile ? 60 : 84;
+      const indicatorWidth = isMobile
+        ? Math.min(60, buttonWidth * 0.8)
+        : Math.min(84, buttonWidth * 0.9);
+      const indicatorLeft = leftPosition + (buttonWidth - indicatorWidth) / 2;
 
-      // Calculate the final position (center the indicator under the button)
-      const indicatorLeft = buttonCenter - indicatorWidth / 2;
-
-      // Apply the position
       indicatorRef.current.style.width = `${indicatorWidth}px`;
       indicatorRef.current.style.left = `${indicatorLeft}px`;
-      indicatorRef.current.style.transform = "none"; // Reset transform to use left positioning
+      indicatorRef.current.style.transform = "none";
     }
   }, [activeTab, isMobile]);
 
   // Update indicator when tab changes or component mounts
   useEffect(() => {
-    // Small delay to ensure DOM is ready and layout is complete
-    const timer = setTimeout(() => {
-      updateTabIndicator();
-    }, 100);
-    return () => clearTimeout(timer);
-  }, [activeTab, updateTabIndicator]);
-
-  // Update indicator on window resize with debounce
-  useEffect(() => {
-    let resizeTimer: NodeJS.Timeout;
-
-    const handleResize = () => {
-      clearTimeout(resizeTimer);
-      resizeTimer = setTimeout(() => {
+    const updateIndicator = () => {
+      requestAnimationFrame(() => {
         updateTabIndicator();
-      }, 100);
+      });
     };
-
-    window.addEventListener("resize", handleResize);
-    return () => {
-      window.removeEventListener("resize", handleResize);
-      clearTimeout(resizeTimer);
-    };
+    updateIndicator();
   }, [updateTabIndicator]);
 
-  // Update URL parameters
+  // Update indicator on window resize
+  useEffect(() => {
+    const handleResize = () => {
+      updateTabIndicator();
+    };
+    window.addEventListener("resize", handleResize);
+    return () => window.removeEventListener("resize", handleResize);
+  }, [updateTabIndicator]);
+
+  // Reset multi-select mode when changing tabs
+  useEffect(() => {
+    if (activeTab !== "fields") {
+      setIsMultiSelectMode(false);
+      setSelectedFields(new Set());
+      setSelectionLimitReached(false);
+    }
+  }, [activeTab]);
+
+  // Stable URL update function
   const updateURL = useCallback(
-    (params: { tab?: string; page?: number; search?: string }) => {
-      const newSearchParams = new URLSearchParams(searchParams.toString());
+    (params: {
+      tab?: string;
+      page?: number;
+      search?: string;
+      filters?: string[];
+      clearFilters?: boolean;
+    }) => {
+      const newSearchParams = new URLSearchParams();
 
       if (params.tab !== undefined) newSearchParams.set("tab", params.tab);
+      else if (activeTab) newSearchParams.set("tab", activeTab);
+
       if (params.page !== undefined)
         newSearchParams.set("page", params.page.toString());
+      else if (currentPage > 1)
+        newSearchParams.set("page", currentPage.toString());
+
       if (params.search !== undefined) {
-        if (params.search) {
-          newSearchParams.set("search", params.search);
-        } else {
-          newSearchParams.delete("search");
-        }
+        if (params.search) newSearchParams.set("search", params.search);
+      } else if (searchQuery) {
+        newSearchParams.set("search", searchQuery);
+      }
+
+      if (params.clearFilters) {
+        // Don't add any filters
+      } else if (params.filters !== undefined) {
+        params.filters.forEach((filter) => {
+          newSearchParams.append("filter", filter);
+        });
+      } else {
+        filters.forEach((filter) => {
+          newSearchParams.append("filter", filter);
+        });
       }
 
       router.push(`?${newSearchParams.toString()}`, { scroll: false });
     },
-    [router, searchParams]
+    [router, activeTab, currentPage, searchQuery, filters]
   );
 
   // Handle tab change
-  const handleTabChange = (tab: string) => {
-    updateURL({ tab, page: 1 }); // Reset to page 1 when changing tabs
-  };
+  const handleTabChange = useCallback(
+    (tab: string) => {
+      updateURL({ tab, page: 1 });
+    },
+    [updateURL]
+  );
 
   // Handle search
-  const handleSearch = (query: string) => {
-    updateURL({ search: query, page: 1 }); // Reset to page 1 when searching
-  };
+  const handleSearch = useCallback(
+    (query: string) => {
+      updateURL({ search: query, page: 1 });
+    },
+    [updateURL]
+  );
 
   // Handle page change
-  const handlePageChange = (page: number) => {
-    updateURL({ page });
-  };
+  const handlePageChange = useCallback(
+    (page: number) => {
+      updateURL({ page });
+    },
+    [updateURL]
+  );
 
-  const toggleExpand = (index: number) => {
-    setExpandedTopic(expandedTopic === index ? null : index);
-  };
+  const toggleExpand = useCallback((index: number) => {
+    setExpandedTopic((prev) => (prev === index ? null : index));
+  }, []);
 
-  // Fetch data based on active tab
+  // Toggle multi-select mode
+  const toggleMultiSelectMode = useCallback(() => {
+    setIsMultiSelectMode((prev) => !prev);
+    setSelectedFields(new Set());
+    setSelectionLimitReached(false);
+  }, []);
+
+  // Handle field selection in multi-select mode
+  const handleFieldSelection = useCallback(
+    (field: Field) => {
+      if (isMultiSelectMode) {
+        setSelectedFields((prev) => {
+          const newSelected = new Set(prev);
+
+          if (newSelected.has(field.id)) {
+            newSelected.delete(field.id);
+            setSelectionLimitReached(false);
+          } else {
+            if (newSelected.size < MAX_FIELD_SELECTIONS) {
+              newSelected.add(field.id);
+              setSelectionLimitReached(
+                newSelected.size >= MAX_FIELD_SELECTIONS
+              );
+            } else {
+              setSelectionLimitReached(true);
+              return prev; // Don't update if limit reached
+            }
+          }
+
+          return newSelected;
+        });
+      } else {
+        updateURL({ tab: "list", page: 1, filters: [field.name] });
+      }
+    },
+    [isMultiSelectMode, updateURL]
+  );
+
+  // Navigate to list tab with selected fields
+  const navigateToListWithSelectedFields = useCallback(() => {
+    if (selectedFields.size === 0) return;
+
+    const selectedFieldNames = Array.from(selectedFields)
+      .map((id) => fields.find((f) => f.id === id)?.name)
+      .filter(Boolean) as string[];
+
+    updateURL({ tab: "list", page: 1, filters: selectedFieldNames });
+
+    setIsMultiSelectMode(false);
+    setSelectedFields(new Set());
+  }, [selectedFields, fields, updateURL]);
+
+  // Remove individual filter
+  const removeFilter = useCallback(
+    (filterToRemove: string) => {
+      const newFilters = filters.filter((filter) => filter !== filterToRemove);
+      updateURL({ filters: newFilters, page: 1 });
+    },
+    [filters, updateURL]
+  );
+
+  // Clear all filters
+  const clearAllFilters = useCallback(() => {
+    updateURL({ clearFilters: true, page: 1 });
+  }, [updateURL]);
+
+  // Toggle showing all filters
+  const toggleShowAllFilters = useCallback(() => {
+    setShowAllFilters((prev) => !prev);
+  }, []);
+
+  // Main data fetching effect - simplified dependencies
   useEffect(() => {
+    // Cancel any ongoing request
+    if (abortControllerRef.current) {
+      abortControllerRef.current.abort();
+    }
+
+    // Create new abort controller
+    abortControllerRef.current = new AbortController();
+    const signal = abortControllerRef.current.signal;
+
     async function fetchData() {
+      // Check cache first
+      let cachedData = null;
+      if (activeTab === "fields") {
+        cachedData = fieldsCache.getCachedData(cacheKey);
+      } else if (activeTab === "professors") {
+        cachedData = professorsCache.getCachedData(cacheKey);
+      } else if (activeTab === "list") {
+        cachedData = topicsCache.getCachedData(cacheKey);
+      }
+
+      if (cachedData && !signal.aborted) {
+        // Use cached data
+        if (activeTab === "fields") {
+          setFields(cachedData.fields || []);
+        } else if (activeTab === "professors") {
+          setProfessors(cachedData.professors || []);
+        } else if (activeTab === "list") {
+          setTopics(cachedData.topics || []);
+        }
+
+        setPagination({
+          totalPages: cachedData.totalPages || 0,
+          totalCount: cachedData.totalCount || 0,
+          currentPage: cachedData.currentPage || 1,
+        });
+
+        setIsLoading(false);
+        return;
+      }
+
+      // No cached data, fetch from server
       setIsLoading(true);
-      const itemsPerPage = getItemsPerPage();
 
       try {
+        if (signal.aborted) return;
+
         if (activeTab === "fields") {
           const res = await getFieldsFromTags(
             currentPage,
             itemsPerPage,
-            searchQuery
+            debouncedSearchQuery
           );
-          if (res.success) {
+          if (res.success && !signal.aborted) {
             setFields(res.fields);
             setPagination({
               totalPages: res.totalPages,
               totalCount: res.totalCount,
               currentPage: res.currentPage,
             });
+            fieldsCache.setCachedData(cacheKey, res);
           }
         } else if (activeTab === "professors") {
           const res = await getProfessors(
             currentPage,
             itemsPerPage,
-            searchQuery
+            debouncedSearchQuery
           );
-          if (res.success) {
+          if (res.success && !signal.aborted) {
             setProfessors(res.professors);
             setPagination({
               totalPages: res.totalPages,
               totalCount: res.totalCount,
               currentPage: res.currentPage,
             });
+            professorsCache.setCachedData(cacheKey, res);
           }
         } else if (activeTab === "list") {
-          // TODO: Get actual student ID from authentication/session
+          let combinedSearchQuery = debouncedSearchQuery;
+          if (filters.length > 0) {
+            const filterQuery = filters.join(" ");
+            combinedSearchQuery = debouncedSearchQuery
+              ? `${debouncedSearchQuery} ${filterQuery}`
+              : filterQuery;
+          }
+
           const studentId = undefined; // Replace with actual student ID when available
           const res = await getTopics(
-            searchQuery,
+            combinedSearchQuery,
             currentPage,
             itemsPerPage,
             studentId
           );
-          if (res.success) {
+          if (res.success && !signal.aborted) {
             setTopics(res.topics);
             setPagination({
               totalPages: res.totalPages,
               totalCount: res.totalCount,
               currentPage: res.currentPage,
             });
+            topicsCache.setCachedData(cacheKey, res);
           }
         }
       } catch (error) {
-        console.error("Error fetching data:", error);
+        if (!signal.aborted) {
+          console.error("Error fetching data:", error);
+        }
       } finally {
-        setIsLoading(false);
+        if (!signal.aborted) {
+          setIsLoading(false);
+        }
       }
     }
 
     fetchData();
-  }, [activeTab, currentPage, searchQuery, getItemsPerPage]);
+
+    return () => {
+      if (abortControllerRef.current) {
+        abortControllerRef.current.abort();
+      }
+    };
+  }, [
+    // Only include the essential dependencies that should trigger a refetch
+    cacheKey, // This is stable and includes all the necessary parameters
+    activeTab,
+    currentPage,
+    debouncedSearchQuery,
+    filters.join(","), // Convert array to string to make it stable
+    itemsPerPage,
+  ]);
 
   return (
     <main className="min-h-screen bg-[#110833] text-white">
@@ -275,6 +481,110 @@ export default function Home() {
           </div>
         </div>
 
+        {/* Multi-select button for fields tab */}
+        {activeTab === "fields" && (
+          <div className="mb-6 flex justify-between items-center">
+            {!isMultiSelectMode ? (
+              <Button
+                onClick={toggleMultiSelectMode}
+                className="bg-yellow-400 hover:bg-yellow-500 text-black font-medium"
+              >
+                Choose Multiple Fields
+              </Button>
+            ) : (
+              <div className="flex flex-col">
+                <div className="flex items-center gap-2">
+                  <Button
+                    onClick={toggleMultiSelectMode}
+                    variant="outline"
+                    className="border-white/30 text-white hover:bg-white/10"
+                  >
+                    Cancel
+                  </Button>
+                  <span className="text-sm text-white/70">
+                    {selectedFields.size} of {MAX_FIELD_SELECTIONS} selected
+                  </span>
+                </div>
+                {selectionLimitReached && (
+                  <p className="text-sm text-yellow-400 mt-1">
+                    Maximum of {MAX_FIELD_SELECTIONS} fields can be selected
+                  </p>
+                )}
+              </div>
+            )}
+
+            {/* Continue button - only show when fields are selected */}
+            {isMultiSelectMode && selectedFields.size > 0 && (
+              <Button
+                onClick={navigateToListWithSelectedFields}
+                className="bg-yellow-400 hover:bg-yellow-500 text-black font-medium"
+              >
+                Continue with {selectedFields.size}{" "}
+                {selectedFields.size === 1 ? "field" : "fields"}
+              </Button>
+            )}
+          </div>
+        )}
+
+        {/* Filter display for list tab */}
+        {activeTab === "list" && filters.length > 0 && (
+          <div className="mb-6">
+            <div className="flex flex-wrap gap-2 items-center mb-3">
+              {/* Show visible filters */}
+              {filters
+                .slice(0, showAllFilters ? filters.length : visibleFilterCount)
+                .map((filter, index) => (
+                  <Badge
+                    key={`${filter}-${index}`}
+                    variant="secondary"
+                    className="bg-white/10 text-white border-white/20 px-3 py-1 text-sm flex items-center gap-2"
+                  >
+                    {filter}
+                    <button
+                      onClick={() => removeFilter(filter)}
+                      className="hover:bg-white/20 rounded-full p-0.5 transition-colors"
+                      aria-label={`Remove ${filter} filter`}
+                    >
+                      <X className="w-3 h-3" />
+                    </button>
+                  </Badge>
+                ))}
+
+              {/* Show "X more" button if there are hidden filters */}
+              {hasHiddenFilters && !showAllFilters && (
+                <button
+                  onClick={toggleShowAllFilters}
+                  className="text-sm text-white/70 hover:text-white flex items-center gap-1 px-2 py-1 rounded-full hover:bg-white/10 transition-colors"
+                >
+                  +{filters.length - visibleFilterCount} more
+                  <ChevronDown className="w-3 h-3" />
+                </button>
+              )}
+
+              {/* Show "Show less" button when expanded */}
+              {showAllFilters && hasHiddenFilters && (
+                <button
+                  onClick={toggleShowAllFilters}
+                  className="text-sm text-white/70 hover:text-white flex items-center gap-1 px-2 py-1 rounded-full hover:bg-white/10 transition-colors"
+                >
+                  Show less
+                  <ChevronDown className="w-3 h-3 rotate-180" />
+                </button>
+              )}
+            </div>
+
+            {/* Clear all filters button */}
+            <Button
+              onClick={clearAllFilters}
+              variant="outline"
+              size="sm"
+              className="border-white/30 text-white hover:bg-white/10"
+            >
+              Clear All Filters
+            </Button>
+          </div>
+        )}
+
         {/* Content with loading states */}
         <div className="content-container">
           {/* Fields tab */}
@@ -286,20 +596,35 @@ export default function Home() {
                 <div className="fields-grid">
                   {fields.length > 0 ? (
                     fields.map((field) => (
-                      <Link
+                      <div
                         key={field.id}
-                        href={`/fields/${field.slug}`}
-                        className="block"
+                        onClick={() => handleFieldSelection(field)}
+                        className={`field-card cursor-pointer relative ${
+                          selectedFields.has(field.id) ? "selected" : ""
+                        }`}
                       >
-                        <div className="field-card">
-                          <span className="text-lg font-medium">
-                            {field.name}
-                          </span>
-                        </div>
-                      </Link>
+                        {isMultiSelectMode && (
+                          <div className="absolute top-3 left-3 z-10">
+                            <div
+                              className={`w-5 h-5 rounded border-2 flex items-center justify-center ${
+                                selectedFields.has(field.id)
+                                  ? "bg-white border-white"
+                                  : "border-white/50 bg-transparent"
+                              }`}
+                            >
+                              {selectedFields.has(field.id) && (
+                                <Check className="w-3 h-3 text-black" />
+                              )}
+                            </div>
+                          </div>
+                        )}
+                        <span className="text-lg font-medium">
+                          {field.name}
+                        </span>
+                      </div>
                     ))
                   ) : (
-                    <p className="text-center text-white/70 py-8">
+                    <p className="text-center text-white/70 py-8 col-span-full">
                       No fields found
                     </p>
                   )}
@@ -345,7 +670,7 @@ export default function Home() {
             </>
           )}
 
-          {/* Topics tab */}
+          {/* Topics/List tab */}
           {activeTab === "list" && (
             <>
               {isLoading ? (
@@ -375,7 +700,7 @@ export default function Home() {
                             <p className="text-xs card-subtitle">
                               {topic.field}
                             </p>
-                            <p className="text-xs mt-1 card-subtitle">
+                            <p className="text-xs mt-1 card-subtitle line-clamp-2">
                               {topic.description}
                             </p>
 
@@ -402,7 +727,7 @@ export default function Home() {
                                     {topic.tags.map((tag, tagIndex) => (
                                       <span
                                         key={tagIndex}
-                                        className="text-xs px-3 py-1 rounded-full bg-white/10 card-subtitle"
+                                        className="text-xs px-2 py-1 rounded-full bg-white/10 card-subtitle"
                                       >
                                         {tag}
                                       </span>
@@ -413,7 +738,7 @@ export default function Home() {
                           </div>
 
                           {expandedTopic !== index && (
-                            <Link href={`/topic/${topic.id}`}>
+                            <Link href={`/topic/${topic.id}`} className="ml-4">
                               <ChevronRight className="h-5 w-5 card-icon" />
                             </Link>
                           )}
@@ -421,9 +746,35 @@ export default function Home() {
                       </div>
                     ))
                   ) : (
-                    <p className="text-center text-white/70 py-8">
-                      No topics found
-                    </p>
+                    <div className="text-center py-12">
+                      <p className="text-white/70 text-lg mb-4">
+                        {filters.length > 0 || searchQuery
+                          ? "No topics found for the current search and filters"
+                          : "No topics available"}
+                      </p>
+                      {(filters.length > 0 || searchQuery) && (
+                        <div className="space-y-2">
+                          <button
+                            onClick={() =>
+                              updateURL({
+                                search: "",
+                                clearFilters: true,
+                                page: 1,
+                              })
+                            }
+                            className="text-yellow-400 hover:text-yellow-300 underline block"
+                          >
+                            Clear search and filters
+                          </button>
+                          <button
+                            onClick={() => handleTabChange("fields")}
+                            className="text-yellow-400 hover:text-yellow-300 underline block"
+                          >
+                            Browse fields
+                          </button>
+                        </div>
+                      )}
+                    </div>
                   )}
                 </div>
               )}
