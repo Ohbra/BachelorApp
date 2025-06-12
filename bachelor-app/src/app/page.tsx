@@ -17,8 +17,12 @@ import { getFieldsFromTags } from "../app/backend/actions/fields/get-fields";
 import { getProfessors } from "../app/backend/actions/professors/get-professors";
 import { getTopics } from "../app/backend/actions/topics/get-topics";
 import { useMediaQuery } from "@/hooks/use-media-query";
+<<<<<<< Updated upstream
 import { useDebouncedValue } from "@/hooks/use-debounced-value";
 import { useDataCache } from "@/hooks/use-data-cache";
+=======
+import { useFilter } from "@/hooks/useFilteredResults";
+>>>>>>> Stashed changes
 import { Pagination } from "@/components/pagination";
 import {
   FieldsSkeleton,
@@ -50,6 +54,8 @@ type Topic = {
   tags: string[];
 };
 
+type Tab = 'fields' | 'professors' | 'list';
+
 export default function Home() {
   const router = useRouter();
   const searchParams = useSearchParams();
@@ -63,6 +69,7 @@ export default function Home() {
 
   // Get URL parameters
   const activeTab = searchParams.get("tab") || "fields";
+  const tab = searchParams.get("tab") as Tab || "fields";
   const currentPage = Number.parseInt(searchParams.get("page") || "1");
   const searchQuery = searchParams.get("search") || "";
   const filters = searchParams.getAll("filter");
@@ -78,8 +85,11 @@ export default function Home() {
   // State
   const [expandedTopic, setExpandedTopic] = useState<number | null>(null);
   const [fields, setFields] = useState<Field[]>([]);
+  const [filteredFields, setFilteredFields] = useState<Field[]>([]);
   const [professors, setProfessors] = useState<Professor[]>([]);
+  const [filteredProfessors, setFilteredProfessors] = useState<Professor[]>([]);
   const [topics, setTopics] = useState<Topic[]>([]);
+  const [filteredTopics, setFilteredTopics] = useState<Topic[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [pagination, setPagination] = useState({
     totalPages: 0,
@@ -445,6 +455,16 @@ export default function Home() {
     itemsPerPage,
   ]);
 
+  // Filter results based on search query
+  const filteredResults = useFilter(
+    tab,
+    searchQuery,
+    {
+      fields,
+      professors,
+      topics,
+    });
+
   return (
     <main className="min-h-screen bg-[#110833] text-white">
       <div className="app-container">
@@ -794,4 +814,8 @@ export default function Home() {
       </div>
     </main>
   );
+
+
 }
+
+
