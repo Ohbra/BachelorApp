@@ -25,7 +25,7 @@ export async function createThesisProposal(formData: FormData) {
   try {
     const user = await getUserSession()
     if (!user) {
-      return { success: false, message: 'You must be logged in' }
+     return { success: false, message: 'You must be logged in' }
     }
 
     const title = formData.get('title') as string

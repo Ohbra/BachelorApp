@@ -1,23 +1,57 @@
 "use client";
 
 import { useState } from "react";
-import { ChevronLeft } from "lucide-react";
+import { createThesisProposal } from "@/app/backend/actions/thesis/create";
 import Link from "next/link";
-import { HoverButton } from "@/components/hover-button";
+import { ChevronLeft } from "lucide-react";
 
 export default function CreateThesisProposal() {
+  const [title, setTitle] = useState("");
+  const [description, setDescription] = useState("");
+  const [requirements, setRequirements] = useState("");
+  const [thesisType, setThesisType] = useState("");
+  const [applicationStart, setApplicationStart] = useState("");
+  const [applicationEnd, setApplicationEnd] = useState("");
   const [selectedTags, setSelectedTags] = useState<string[]>([]);
+  const [message, setMessage] = useState("");
 
   const toggleTag = (tag: string) => {
-    if (selectedTags.includes(tag)) {
-      setSelectedTags(selectedTags.filter((t) => t !== tag));
-    } else {
-      setSelectedTags([...selectedTags, tag]);
-    }
+    setSelectedTags((prev) =>
+      prev.includes(tag) ? prev.filter((t) => t !== tag) : [...prev, tag]
+    );
   };
 
+  async function handleSubmit(e: React.FormEvent) {
+    e.preventDefault();
+    const formData = new FormData();
+    formData.append("title", title);
+    formData.append("description", description);
+    formData.append("requirements", requirements);
+    formData.append("thesis_type", thesisType);
+    formData.append("application_start", applicationStart);
+    formData.append("application_end", applicationEnd);
+    formData.append("tags", selectedTags.join(","));
+
+    const result = await createThesisProposal(formData);
+    if (result?.success) {
+      setMessage("Thesis proposal created!");
+      setTitle("");
+      setDescription("");
+      setRequirements("");
+      setThesisType("");
+      setApplicationStart("");
+      setApplicationEnd("");
+      setSelectedTags([]);
+    } else {
+      setMessage(result?.message || "Error creating thesis proposal.");
+    }
+  }
+
   return (
-    <div className="max-w-md mx-auto rounded-lg overflow-hidden shadow-lg bg-[#e6e6ff] text-black">
+    <form
+      className="max-w-md mx-auto rounded-lg overflow-hidden shadow-lg bg-[#e6e6ff] text-black"
+      onSubmit={handleSubmit}
+    >
       <div className="p-4">
         <div className="flex items-center mb-6">
           <Link href="/">
@@ -37,39 +71,57 @@ export default function CreateThesisProposal() {
               <input
                 type="text"
                 placeholder="Enter the thesis title"
-                className="w-full p-2 border border-gray-300 rounded-md hover:border-[#FFE15D] transition-all duration-300"
+                className="w-full p-2 border border-gray-300 rounded-md"
+                value={title}
+                onChange={(e) => setTitle(e.target.value)}
+                required
               />
-              <select className="w-full p-2 border border-gray-300 rounded-md hover:border-[#FFE15D] transition-all duration-300">
-                <option value="">Faculty</option>
-                <option value="computer-science">Computer Science</option>
-                <option value="business">Business</option>
-                <option value="design">Design</option>
+              <select
+                className="w-full p-2 border border-gray-300 rounded-md"
+                value={thesisType}
+                onChange={(e) => setThesisType(e.target.value)}
+                required
+              >
+                <option value="">Select thesis type</option>
+                <option value="Bachelor">Bachelor</option>
+                <option value="Master">Master</option>
               </select>
-              <select className="w-full p-2 border border-gray-300 rounded-md hover:border-[#FFE15D] transition-all duration-300">
-                <option value="">Study course</option>
-                <option value="bachelor">Bachelor</option>
-                <option value="master">Master</option>
-              </select>
+              <input
+                type="date"
+                className="w-full p-2 border border-gray-300 rounded-md"
+                value={applicationStart}
+                onChange={(e) => setApplicationStart(e.target.value)}
+                required
+              />
+              <input
+                type="date"
+                className="w-full p-2 border border-gray-300 rounded-md"
+                value={applicationEnd}
+                onChange={(e) => setApplicationEnd(e.target.value)}
+                required
+              />
             </div>
           </div>
 
           <div>
             <h3 className="text-sm font-medium mb-2">Short Description</h3>
             <textarea
-              className="w-full h-32 p-2 border border-gray-300 rounded-md hover:border-[#FFE15D] transition-all duration-300"
-              placeholder="This is the topic description. Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed diam nonummy nibh euismod tincidunt ut laoreet dolore magna aliquam erat volutpat."
+              className="w-full h-32 p-2 border border-gray-300 rounded-md"
+              placeholder="This is the topic description..."
+              value={description}
+              onChange={(e) => setDescription(e.target.value)}
+              required
             ></textarea>
           </div>
 
           <div>
             <h3 className="text-sm font-medium mb-2">Requirements</h3>
             <textarea
-              className="w-full h-24 p-2 border border-gray-300 rounded-md hover:border-[#FFE15D] transition-all duration-300"
-              placeholder="Short description of the needed requirement. Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed diam nonummy nibh euismod tincidunt ut."
+              className="w-full h-24 p-2 border border-gray-300 rounded-md"
+              placeholder="Short description of the needed requirement..."
+              value={requirements}
+              onChange={(e) => setRequirements(e.target.value)}
             ></textarea>
-            <button className="text-sm text-blue-600 mt-2 hover:text-[#806b00] transition-all duration-300">
-              + Add another requirement
-            </button>
           </div>
 
           <div>
@@ -88,6 +140,7 @@ export default function CreateThesisProposal() {
               ].map((tag) => (
                 <button
                   key={tag}
+                  type="button"
                   onClick={() => toggleTag(tag)}
                   className={`text-xs px-3 py-1.5 rounded-full transition-all duration-300 ${
                     selectedTags.includes(tag)
@@ -95,28 +148,35 @@ export default function CreateThesisProposal() {
                       : "hover-card bg-[#d8d8ff] text-black"
                   }`}
                 >
-                  <span
-                    className={selectedTags.includes(tag) ? "" : "card-content"}
-                  >
-                    {tag}
-                  </span>
+                  {tag}
                 </button>
               ))}
             </div>
           </div>
 
           <div className="flex space-x-3 pt-4">
-            <HoverButton className="flex-1 bg-transparent border border-gray-300 rounded-md py-2 px-4">
+            <button
+              className="flex-1 bg-transparent border border-gray-300 rounded-md py-2 px-4"
+              type="submit"
+            >
               Submit proposal
-            </HoverButton>
+            </button>
             <Link href="/" className="flex-1">
-              <button className="w-full py-2 px-4 border border-gray-300 rounded-md text-black bg-transparent hover:bg-gray-100 transition-all duration-300">
+              <button
+                type="button"
+                className="w-full py-2 px-4 border border-gray-300 rounded-md text-black bg-transparent hover:bg-gray-100 transition-all duration-300"
+              >
                 Cancel
               </button>
             </Link>
           </div>
+          {message && (
+            <div className="pt-2 text-center text-sm text-green-700">
+              {message}
+            </div>
+          )}
         </div>
       </div>
-    </div>
+    </form>
   );
 }
