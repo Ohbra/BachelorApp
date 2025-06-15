@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { createThesisProposal } from "@/app/backend/actions/thesis/create";
+import { createThesisProposal } from "@/app/backend/actions/thesis/create-thesis-proposal";
 import Link from "next/link";
 import { ChevronLeft } from "lucide-react";
 
