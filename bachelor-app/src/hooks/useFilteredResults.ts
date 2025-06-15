@@ -1,4 +1,5 @@
 import { useEffect, useState, useMemo } from 'react';
+import { useDebouncedValue } from './use-debounced-value';
 
 type Field = {
   id: string;
@@ -29,7 +30,7 @@ type Tab = 'fields' | 'professors' | 'list';
 type FilteredResults = {
   fields: Field[];
   professors: Professor[];
-  topics: Topic[]; // ! change to lists
+  topics: Topic[]; 
 };
 
 // *NOTE server-side filtering
@@ -97,12 +98,16 @@ export function useFilteredResults(
 export function useFilterOnClient(
   activeTab: Tab,
   query: string,
-  data: FilteredResults
+  data: FilteredResults,
+  debounceMs = 300
 ) {
+  const debouncedQuery = useDebouncedValue(query, debounceMs);
+  // Use memoization to avoid unnecessary re-renders
+  const memoizedQuery = useMemo(() => debouncedQuery, [debouncedQuery]);
   const [results, setResults] = useState<Field[] | Professor[] | Topic[]>([]);
 
   useEffect(() => {
-    const q = query.trim().toLowerCase();
+    const q = memoizedQuery.trim().toLowerCase();
 
     if (activeTab === 'fields') {
       const filtered = data.fields.filter(field =>

@@ -17,12 +17,9 @@ import { getFieldsFromTags } from "../app/backend/actions/fields/get-fields";
 import { getProfessors } from "../app/backend/actions/professors/get-professors";
 import { getTopics } from "../app/backend/actions/topics/get-topics";
 import { useMediaQuery } from "@/hooks/use-media-query";
-<<<<<<< Updated upstream
 import { useDebouncedValue } from "@/hooks/use-debounced-value";
 import { useDataCache } from "@/hooks/use-data-cache";
-=======
-import { useFilter } from "@/hooks/useFilteredResults";
->>>>>>> Stashed changes
+import { useFilterOnClient } from "@/hooks/useFilteredResults";
 import { Pagination } from "@/components/pagination";
 import {
   FieldsSkeleton,
@@ -456,7 +453,7 @@ export default function Home() {
   ]);
 
   // Filter results based on search query
-  const filteredResults = useFilter(
+  const filteredResults = useFilterOnClient(
     tab,
     searchQuery,
     {
@@ -464,6 +461,16 @@ export default function Home() {
       professors,
       topics,
     });
+  console.log("Filtered Results:", filteredResults);
+  const fieldsToShow = filteredResults.filter(
+    (item): item is Field => 'slug' in item
+  );
+  const professorsToShow = filteredResults.filter(
+    (item): item is Professor => 'department' in item && !("title" in item)
+  );
+  const topicsToShow = filteredResults.filter(
+    (item): item is Topic => 'field' in item && !("department" in item)
+  );
 
   return (
     <main className="min-h-screen bg-[#110833] text-white">
@@ -614,8 +621,9 @@ export default function Home() {
                 <FieldsSkeleton />
               ) : (
                 <div className="fields-grid">
-                  {fields.length > 0 ? (
-                    fields.map((field) => (
+                  {fieldsToShow.length > 0 ? (
+                    fieldsToShow
+                    .map((field) => (
                       <div
                         key={field.id}
                         onClick={() => handleFieldSelection(field)}
@@ -660,8 +668,9 @@ export default function Home() {
                 <ProfessorsSkeleton />
               ) : (
                 <div className="professors-list">
-                  {professors.length > 0 ? (
-                    professors.map((professor) => (
+                  {professorsToShow.length > 0 ? (
+                    professorsToShow
+                    .map((professor) => (
                       <Link
                         key={professor.id}
                         href={`/professor/${professor.id}`}
@@ -697,8 +706,8 @@ export default function Home() {
                 <TopicsSkeleton />
               ) : (
                 <div className="topics-list">
-                  {topics.length > 0 ? (
-                    topics.map((topic, index) => (
+                  {topicsToShow.length > 0 ? (
+                    topicsToShow.map((topic, index) => (
                       <div key={topic.id} className="list-card">
                         <div className="flex justify-between items-start">
                           <div className="flex-1">
