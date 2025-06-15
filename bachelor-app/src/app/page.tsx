@@ -667,8 +667,9 @@ export default function Home() {
                 <FieldsSkeleton />
               ) : (
                 <div className="fields-grid">
-                  {fields.length > 0 ? (
-                    fields.map((field) => (
+                  {fieldsToShow.length > 0 ? (
+                    fieldsToShow
+                    .map((field) => (
                       <div
                         key={field.id}
                         onClick={() => handleFieldSelection(field)}
@@ -734,8 +735,8 @@ export default function Home() {
                 <TopicsSkeleton />
               ) : (
                 <div className="topics-list">
-                  {topics.length > 0 ? (
-                    topics.map((topic, index) => (
+                  {topicsToShow.length > 0 ? (
+                    topicsToShow.map((topic, index) => (
                       <div key={topic.id} className="list-card">
                         <div className="flex justify-between items-start">
                           <div className="flex-1">
