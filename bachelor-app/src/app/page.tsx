@@ -412,7 +412,7 @@ export default function Home() {
             professorsCache.setCachedData(cacheKey, res)
           }
         } else if (activeTab === "list") {
-          // Use the server action if we have selected field IDs
+          // Use the new server action if we have selected field IDs
           if (isFilteredMode && selectedFieldIds.length > 0) {
             const res = await filterSelectedFields({
               selectedFieldIds,
@@ -476,7 +476,7 @@ export default function Home() {
     }
   }, [
     // Only include the essential dependencies that should trigger a refetch
-    cacheKey, 
+    cacheKey, // This is stable and includes all the necessary parameters
     activeTab,
     currentPage,
     debouncedSearchQuery,
@@ -667,9 +667,8 @@ export default function Home() {
                 <FieldsSkeleton />
               ) : (
                 <div className="fields-grid">
-                  {fieldsToShow.length > 0 ? (
-                    fieldsToShow
-                    .map((field) => (
+                  {fields.length > 0 ? (
+                    fields.map((field) => (
                       <div
                         key={field.id}
                         onClick={() => handleFieldSelection(field)}
@@ -735,8 +734,8 @@ export default function Home() {
                 <TopicsSkeleton />
               ) : (
                 <div className="topics-list">
-                  {topicsToShow.length > 0 ? (
-                    topicsToShow.map((topic, index) => (
+                  {topics.length > 0 ? (
+                    topics.map((topic, index) => (
                       <div key={topic.id} className="list-card">
                         <div className="flex justify-between items-start">
                           <div className="flex-1">

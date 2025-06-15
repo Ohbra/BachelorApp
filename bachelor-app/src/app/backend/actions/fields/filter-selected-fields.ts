@@ -3,7 +3,6 @@
 import { z } from "zod"
 import { prisma } from "../../prisma/prisma"
 
-// Define the schema for validation
 const filterSelectedFieldsSchema = z.object({
   selectedFieldIds: z.array(z.string()).min(1, "At least one field must be selected"),
   searchQuery: z.string().optional(),
