@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { ChevronLeft } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -23,14 +23,24 @@ const PREDEFINED_TAGS = [
 export default function CreateTopicPage({
   params,
 }: {
-  params: { id: string };
+  params: Promise<{ id: string }>;
 }) {
   const router = useRouter();
+  const [professorId, setProfessorId] = useState<string>("");
   const [selectedTags, setSelectedTags] = useState<string[]>([]);
   const [requirements, setRequirements] = useState<string[]>([
     "Short description of the needed requirement. Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed diam nonummy eirmod tempor invidunt",
     "Short description of the needed requirement. Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed diam nonummy eirmod tempor invidunt",
   ]);
+
+  // Resolve the params Promise
+  useEffect(() => {
+    const resolveParams = async () => {
+      const resolvedParams = await params;
+      setProfessorId(resolvedParams.id);
+    };
+    resolveParams();
+  }, [params]);
 
   const toggleTag = (tag: string) => {
     if (selectedTags.includes(tag)) {
@@ -51,14 +61,27 @@ export default function CreateTopicPage({
   };
 
   const handleBack = () => {
-    router.push(`/professor/${params.id}`);
+    if (professorId) {
+      router.push(`/professor/${professorId}`);
+    }
   };
 
   const handleSubmit = () => {
     // Handle form submission here
     console.log("Form submitted");
-    router.push(`/professor/${params.id}`);
+    if (professorId) {
+      router.push(`/professor/${professorId}`);
+    }
   };
+
+  // Show loading state while params are being resolved
+  if (!professorId) {
+    return (
+      <div className="min-h-screen bg-gradient-to-b from-[#e6e6ff] to-[#d4d4ff] flex items-center justify-center">
+        <div className="text-black">Loading...</div>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen bg-gradient-to-b from-[#e6e6ff] to-[#d4d4ff] px-4 py-6">
@@ -166,7 +189,7 @@ export default function CreateTopicPage({
               variant="outline"
               className="flex-1 border-black/20 text-black hover:bg-black/5 py-3 rounded-full"
             >
-              Canceel
+              Cancel
             </Button>
           </div>
         </div>
