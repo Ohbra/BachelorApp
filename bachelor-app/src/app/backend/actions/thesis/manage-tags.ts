@@ -29,7 +29,7 @@ export async function addTagToThesis(formData: FormData) {
     const data = validationResult.data
 
     const thesis = await prisma.thesis_proposal.findUnique({
-      where: { thesis_id: data.thesis_id }
+      where: { thesis_id: data.thesis_id.toString() }
     })
 
     if (!thesis) {
@@ -51,7 +51,7 @@ export async function addTagToThesis(formData: FormData) {
 
     await prisma.thesis_proposal_tag.create({
       data: {
-        thesis_id: data.thesis_id,
+        thesis_id: data.thesis_id.toString(),
         tag_name: data.tag_name
       }
     })
