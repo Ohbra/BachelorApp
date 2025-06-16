@@ -1,6 +1,8 @@
 import Link from "next/link";
 
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import { YellowButton } from "@/components/yellow-button";
+
 interface ProfileCardProps {
   name: string;
   role: string;
