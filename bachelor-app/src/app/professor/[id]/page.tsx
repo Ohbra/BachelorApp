@@ -5,9 +5,10 @@ import { notFound } from "next/navigation";
 export default async function ProfessorProfilePage({
   params,
 }: {
-  params: { id: string };
+  params: Promise<{ id: string }>;
 }) {
-  const result = await getProfessorDetails(params.id);
+  const { id } = await params;
+  const result = await getProfessorDetails(id);
 
   if (!result.success || !result.details) {
     notFound();

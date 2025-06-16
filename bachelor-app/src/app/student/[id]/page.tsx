@@ -1,5 +1,6 @@
 "use client";
 
+import { useEffect, useState } from "react";
 import { ProfileCard } from "@/components/profile-card";
 import { Header } from "@/components/header";
 
@@ -16,9 +17,37 @@ const students = {
   },
 };
 
-export default function StudentPage({ params }: { params: { id: string } }) {
-  const student =
-    students[params.id as keyof typeof students] || students.student1;
+export default function StudentPage({
+  params,
+}: {
+  params: Promise<{ id: string }>;
+}) {
+  const [studentId, setStudentId] = useState<string>("");
+  const [student, setStudent] = useState<typeof students.student1 | null>(null);
+
+  // Resolve the params Promise
+  useEffect(() => {
+    const resolveParams = async () => {
+      const resolvedParams = await params;
+      setStudentId(resolvedParams.id);
+
+      // Get student data
+      const studentData =
+        students[resolvedParams.id as keyof typeof students] ||
+        students.student1;
+      setStudent(studentData);
+    };
+    resolveParams();
+  }, [params]);
+
+  // Show loading state while params are being resolved
+  if (!studentId || !student) {
+    return (
+      <div className="max-w-md mx-auto bg-[#0f0f2e] min-h-screen flex items-center justify-center">
+        <div className="text-white">Loading...</div>
+      </div>
+    );
+  }
 
   return (
     <div className="max-w-md mx-auto bg-[#0f0f2e] min-h-screen">
