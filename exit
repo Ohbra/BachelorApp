@@ -1,0 +1,58 @@
+[33mc638424[m[33m ([m[1;36mHEAD[m[33m -> [m[1;32mfront-end[m[33m, [m[1;31morigin/front-end[m[33m)[m feat(deployment) issues 6
+[33m451edda[m feat(deployment) issues 5
+[33mf63128b[m feat(deployment) issues 4
+[33mfe25491[m feat(deployment) issues 3
+[33m924162e[m feat(deployment) issues 2
+[33mf99cbf4[m feat(deployment) issues
+[33m044baf4[m feat(deployment) issues with pkg.json and postcss.config
+[33mb22cc54[m feat(deployment): update for professor and package.json
+[33m78cb203[m feat(deployment): Professor page changes
+[33mff908ac[m feat:(deployment)Next.js 15 params issue for other folders and pages.
+[33me4a5531[m feat:(deployment)Next.js 15 params issue.
+[33m44ab39e[m feat:(ui) implemented Professor component
+[33m329a8e0[m feat: filter option multiple and single.
+[33md70800d[m feat: text color for fields,professors and list
+[33m611e10e[m Merge pull request #7 from Ohbra/fix_main_page
+[33mb5c043c[m[33m ([m[1;31morigin/fix_main_page[m[33m)[m Revert main page file to state from last commit from frontend
+[33mf32d853[m resolved conflicts
+[33m1da78e0[m resolved conflicts
+[33m7fa9c23[m Merge pull request #6 from Ohbra/actions_backend_frontend
+[33maa1fccf[m[33m ([m[1;31morigin/actions_backend_frontend[m[33m)[m Merge branch 'main' into actions_backend_frontend
+[33m54e20e7[m - Added backend actions:   - get-professor-detail   - get-topic-detail   - get-student-profile   - update-student-profile
+[33m4adb2f3[m feat(ui):Guest landing page, Pagination, Searchbar and user icon updated
+[33m64260eb[m Merge branch 'main' of https://github.com/Ohbra/BachelorApp FIX:  fixed signups not functioning properly, failed when course / faculty not found but still create orphaned entry in user parent.
+[33mb16f7c1[m BUGFIX: signup process fails when faculty or course not found, signups either fail completely or work. Modified: CreateClient, now uses service role key which has admin access
+[33m9e6ee62[m Merge pull request #5 from Ohbra/actions_recommendations
+[33m61b12f2[m[33m ([m[1;31morigin/actions_recommendations[m[33m)[m Update recommendation.test.ts
+[33mbbd420b[m Update get-topics.ts
+[33m43c4b03[m Update get-student-profile.ts
+[33m6f3ec8e[m refactor recommendation-related code and test; implement recommendations in get-topics action; add 'Recommended for you' section in the topics list screen; add get-student-profile action
+[33m162537e[m Merge pull request #4 from Ohbra/recommendation
+[33md7c8baa[m feat(ui):responsive design, onboarding page and user profile icon
+[33md47f3ac[m StefCode refactoring; add get-professors, get-fields, and get-topics actions; add tests:
+[33m168b141[m[33m ([m[1;31morigin/recommendation[m[33m)[m Create vitest.config.ts
+[33m8ed61c1[m The Unit test for the recommendation engine
+[33mbfbbfd2[m Create recommendations.http
+[33me8a90c0[m Create route.ts
+[33m0805d2b[m Merge pull request #3 from Ohbra/actions_tests
+[33m3dc0eb4[m[33m ([m[1;31morigin/actions_tests[m[33m)[m  Code refactoring; add get-professors, get-fields, and get-topics actions; add tests
+[33mbb09671[m WIP : code refactoring; add get-professors, get-fields, and get-topics actions; add tests
+[33m52574ed[m feat(ui): updated login, signup and onboarding pages
+[33m6cab70f[m Merge pull request #2 from Ohbra/server_actions
+[33m91e13f8[m Fix and test login/signup actions; complete thesis (create, update, delete) and profile(update-student, update-supervisor) actions; add getProfessors action; update supabase dependency
+[33m06c5844[m resolved conflict and redirected to fields page after login
+[33mfd7a2a7[m resolved conflicts
+[33m66ada45[m resolve merge conflicts
+[33mb363636[m fix merged conflicts
+[33m0b8caaa[m[33m ([m[1;31morigin/feature_login_signup[m[33m)[m BUG FIX: add function to convert user input to 'Title Case (Bachelor | Master)'
+[33mb707571[m add feat: login and signup
+[33m25d4c06[m[33m ([m[1;31morigin/fix_test_add_auth[m[33m)[m fix failing test, add authentication for signin, signups and anonymous signins
+[33m33b71d5[m feat(ui): front end update
+[33mf399f12[m feat(ui): front end update
+[33m4e9a25c[m feat(ui): front end update
+[33m90a6eba[m feat(ui): front end update
+[33m1264ba1[m Merge pull request #1 from Ohbra/db_tests
+[33meffc9f0[m[33m ([m[1;31morigin/db_tests[m[33m)[m Added DB tests and register server action
+[33m7f69ca0[m feat(ui): second iteration with database implementation
+[33m5e862b2[m docs(readme): describe Bachelor App and update setup instructions
+[33m1efed8a[m feat(ui): initial Bachelor App setup
