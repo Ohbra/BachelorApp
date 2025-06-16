@@ -166,7 +166,7 @@ export default function CreateTopicPage({
               variant="outline"
               className="flex-1 border-black/20 text-black hover:bg-black/5 py-3 rounded-full"
             >
-              Cancel
+              Canceel
             </Button>
           </div>
         </div>
