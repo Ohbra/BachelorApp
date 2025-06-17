@@ -37,7 +37,7 @@ export default function CreateThesisProposal() {
 
     try {
       // Option 1: If the function expects formData and an empty object/null as second parameter
-      const result = await createThesisProposal(formData, {})
+      const result = await createThesisProposal(null, formData)
 
       // Option 2: If you need to pass user session or other data, uncomment this instead:
       // const result = await createThesisProposal(formData, { userId: "current-user-id" })

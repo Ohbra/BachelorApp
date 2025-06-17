@@ -55,9 +55,9 @@ export function ProfileCard({
 
       <div className="mt-2">
         <Link href={isStudent ? "/student/edit" : "/professor/edit"}>
-          <YellowButton>
+          <button className="bg-yellow-400 hover:bg-yellow-500 text-black font-semibold py-2 px-4 rounded transition">
             {isStudent ? "edit profile" : "send email"}
-          </YellowButton>
+          </button>
         </Link>
       </div>
 

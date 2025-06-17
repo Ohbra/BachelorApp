@@ -24,7 +24,7 @@ export default function TopicPage({ params }: { params: Promise<{ id: string }> 
     if (!topicId) return
 
     async function fetchTopic() {
-      const res = await getTopicDetails(topicId)
+      const res = await getTopicDetails(topicId!)
       if (res.success && res.details) {
         setTopic(res.details)
       } else {
