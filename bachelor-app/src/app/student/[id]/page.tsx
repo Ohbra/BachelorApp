@@ -1,7 +1,7 @@
-"use client";
+"use client"
 
-import { ProfileCard } from "@/components/profile-card";
-import { Header } from "@/components/header";
+import { ProfileCard } from "@/components/profile-card"
+import { Header } from "@/components/header"
 
 // This would typically come from a database or API
 const students = {
@@ -14,11 +14,11 @@ const students = {
     interests: ["Data science", "Frontend", "Marketing", "AI", "UX/UI Design"],
     bio: "This is a short description of the student. It can contain information on how often they prefer to meet up with their advisors or if they have any special requirements or preferences.",
   },
-};
+}
 
-export default function StudentPage({ params }: { params: { id: string } }) {
-  const student =
-    students[params.id as keyof typeof students] || students.student1;
+export default async function StudentPage({ params }: { params: Promise<{ id: string }> }) {
+  const { id } = await params
+  const student = students[id as keyof typeof students] || students.student1
 
   return (
     <div className="max-w-md mx-auto bg-[#0f0f2e] min-h-screen">
@@ -34,5 +34,5 @@ export default function StudentPage({ params }: { params: { id: string } }) {
         isStudent={true}
       />
     </div>
-  );
+  )
 }

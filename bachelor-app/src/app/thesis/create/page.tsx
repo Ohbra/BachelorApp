@@ -1,49 +1,64 @@
-"use client";
+"use client"
 
-import { useState } from "react";
-import { createThesisProposal } from "@/app/backend/actions/thesis/create-thesis-proposal";
-import Link from "next/link";
-import { ChevronLeft } from "lucide-react";
+import type React from "react"
+
+import { useState } from "react"
+import { createThesisProposal } from "@/app/backend/actions/thesis/create-thesis-proposal"
+import Link from "next/link"
+import { ChevronLeft } from "lucide-react"
 
 export default function CreateThesisProposal() {
-  const [title, setTitle] = useState("");
-  const [description, setDescription] = useState("");
-  const [requirements, setRequirements] = useState("");
-  const [thesisType, setThesisType] = useState("");
-  const [applicationStart, setApplicationStart] = useState("");
-  const [applicationEnd, setApplicationEnd] = useState("");
-  const [selectedTags, setSelectedTags] = useState<string[]>([]);
-  const [message, setMessage] = useState("");
+  const [title, setTitle] = useState("")
+  const [description, setDescription] = useState("")
+  const [requirements, setRequirements] = useState("")
+  const [thesisType, setThesisType] = useState("")
+  const [applicationStart, setApplicationStart] = useState("")
+  const [applicationEnd, setApplicationEnd] = useState("")
+  const [selectedTags, setSelectedTags] = useState<string[]>([])
+  const [message, setMessage] = useState("")
+  const [isSubmitting, setIsSubmitting] = useState(false)
 
   const toggleTag = (tag: string) => {
-    setSelectedTags((prev) =>
-      prev.includes(tag) ? prev.filter((t) => t !== tag) : [...prev, tag]
-    );
-  };
+    setSelectedTags((prev) => (prev.includes(tag) ? prev.filter((t) => t !== tag) : [...prev, tag]))
+  }
 
   async function handleSubmit(e: React.FormEvent) {
-    e.preventDefault();
-    const formData = new FormData();
-    formData.append("title", title);
-    formData.append("description", description);
-    formData.append("requirements", requirements);
-    formData.append("thesis_type", thesisType);
-    formData.append("application_start", applicationStart);
-    formData.append("application_end", applicationEnd);
-    formData.append("tags", selectedTags.join(","));
+    e.preventDefault()
+    setIsSubmitting(true)
 
-    const result = await createThesisProposal(formData);
-    if (result?.success) {
-      setMessage("Thesis proposal created!");
-      setTitle("");
-      setDescription("");
-      setRequirements("");
-      setThesisType("");
-      setApplicationStart("");
-      setApplicationEnd("");
-      setSelectedTags([]);
-    } else {
-      setMessage(result?.message || "Error creating thesis proposal.");
+    const formData = new FormData()
+    formData.append("title", title)
+    formData.append("description", description)
+    formData.append("requirements", requirements)
+    formData.append("thesis_type", thesisType)
+    formData.append("application_start", applicationStart)
+    formData.append("application_end", applicationEnd)
+    formData.append("tags", selectedTags.join(","))
+
+    try {
+      // Option 1: If the function expects formData and an empty object/null as second parameter
+      const result = await createThesisProposal(formData, {})
+
+      // Option 2: If you need to pass user session or other data, uncomment this instead:
+      // const result = await createThesisProposal(formData, { userId: "current-user-id" })
+
+      if (result?.success) {
+        setMessage("Thesis proposal created!")
+        setTitle("")
+        setDescription("")
+        setRequirements("")
+        setThesisType("")
+        setApplicationStart("")
+        setApplicationEnd("")
+        setSelectedTags([])
+      } else {
+        setMessage(result?.message || "Error creating thesis proposal.")
+      }
+    } catch (error) {
+      console.error("Error creating thesis proposal:", error)
+      setMessage("An unexpected error occurred.")
+    } finally {
+      setIsSubmitting(false)
     }
   }
 
@@ -59,9 +74,7 @@ export default function CreateThesisProposal() {
               <ChevronLeft className="h-5 w-5 mr-2" />
             </div>
           </Link>
-          <h2 className="text-lg font-semibold">
-            Create a new thesis proposal
-          </h2>
+          <h2 className="text-lg font-semibold">Create a new thesis proposal</h2>
         </div>
 
         <div className="space-y-4">
@@ -111,7 +124,7 @@ export default function CreateThesisProposal() {
               value={description}
               onChange={(e) => setDescription(e.target.value)}
               required
-            ></textarea>
+            />
           </div>
 
           <div>
@@ -121,7 +134,7 @@ export default function CreateThesisProposal() {
               placeholder="Short description of the needed requirement..."
               value={requirements}
               onChange={(e) => setRequirements(e.target.value)}
-            ></textarea>
+            />
           </div>
 
           <div>
@@ -156,10 +169,11 @@ export default function CreateThesisProposal() {
 
           <div className="flex space-x-3 pt-4">
             <button
-              className="flex-1 bg-transparent border border-gray-300 rounded-md py-2 px-4"
+              className="flex-1 bg-transparent border border-gray-300 rounded-md py-2 px-4 disabled:opacity-50"
               type="submit"
+              disabled={isSubmitting}
             >
-              Submit proposal
+              {isSubmitting ? "Creating..." : "Submit proposal"}
             </button>
             <Link href="/" className="flex-1">
               <button
@@ -171,12 +185,14 @@ export default function CreateThesisProposal() {
             </Link>
           </div>
           {message && (
-            <div className="pt-2 text-center text-sm text-green-700">
+            <div
+              className={`pt-2 text-center text-sm ${message.includes("Error") || message.includes("error") ? "text-red-700" : "text-green-700"}`}
+            >
               {message}
             </div>
           )}
         </div>
       </div>
     </form>
-  );
+  )
 }
