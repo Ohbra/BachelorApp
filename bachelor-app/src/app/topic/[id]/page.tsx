@@ -1,42 +1,47 @@
-"use client";
+"use client"
 
-import { useEffect, useState } from "react";
-import Link from "next/link";
-import { ChevronLeft } from 'lucide-react';
-import { getTopicDetails, TopicDetails } from "@/app/backend/actions/topics/get-topic-details";
+import { useEffect, useState } from "react"
+import Link from "next/link"
+import { ChevronLeft } from "lucide-react"
+import { getTopicDetails, type TopicDetails } from "@/app/backend/actions/topics/get-topic-details"
 
-export default function TopicPage({ params }: { params: { id: string } }) {
-  const [topic, setTopic] = useState<TopicDetails | null>(null);
-  const [loading, setLoading] = useState(true);
+export default function TopicPage({ params }: { params: Promise<{ id: string }> }) {
+  const [topic, setTopic] = useState<TopicDetails | null>(null)
+  const [loading, setLoading] = useState(true)
+  const [topicId, setTopicId] = useState<string | null>(null)
 
+  // Resolve params first
   useEffect(() => {
+    async function resolveParams() {
+      const resolvedParams = await params
+      setTopicId(resolvedParams.id)
+    }
+    resolveParams()
+  }, [params])
+
+  // Fetch topic data once we have the ID
+  useEffect(() => {
+    if (!topicId) return
+
     async function fetchTopic() {
-      const res = await getTopicDetails(params.id);
+      const res = await getTopicDetails(topicId)
       if (res.success && res.details) {
-        setTopic(res.details);
+        setTopic(res.details)
       } else {
-        console.error("⚠️ Failed to fetch topic details:", res.message);
+        console.error("⚠️ Failed to fetch topic details:", res.message)
       }
-      setLoading(false);
+      setLoading(false)
     }
 
-    fetchTopic();
-  }, [params.id]);
+    fetchTopic()
+  }, [topicId])
 
   if (loading) {
-    return (
-      <div className="text-center text-sm text-gray-500 mt-10">
-        Loading topic details...
-      </div>
-    );
+    return <div className="text-center text-sm text-gray-500 mt-10">Loading topic details...</div>
   }
 
   if (!topic) {
-    return (
-      <div className="text-center text-sm text-red-500 mt-10">
-        Topic not found.
-      </div>
-    );
+    return <div className="text-center text-sm text-red-500 mt-10">Topic not found.</div>
   }
 
   return (
@@ -64,7 +69,7 @@ export default function TopicPage({ params }: { params: { id: string } }) {
           {topic.supervisor.email && (
             <button
               className="btn-hover py-1 px-4 border border-gray-300 rounded-full bg-transparent text-black text-xs mt-4"
-              onClick={() => window.location.href = `mailto:${topic.supervisor.email}`}
+              onClick={() => (window.location.href = `mailto:${topic.supervisor.email}`)}
             >
               send email
             </button>
@@ -88,10 +93,7 @@ export default function TopicPage({ params }: { params: { id: string } }) {
           <h3 className="text-lg font-bold mt-6 mb-3">Tags:</h3>
           <div className="flex flex-wrap gap-2">
             {topic.tags.map((tag, index) => (
-              <span
-                key={index}
-                className="hover-card text-sm bg-[#d8d8ff] px-4 py-2 rounded-full shadow-sm"
-              >
+              <span key={index} className="hover-card text-sm bg-[#d8d8ff] px-4 py-2 rounded-full shadow-sm">
                 {tag}
               </span>
             ))}
@@ -99,5 +101,5 @@ export default function TopicPage({ params }: { params: { id: string } }) {
         </div>
       </div>
     </div>
-  );
+  )
 }

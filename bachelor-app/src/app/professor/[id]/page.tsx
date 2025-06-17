@@ -2,13 +2,18 @@ import { getProfessorDetails } from "@/app/backend/actions/professors/get-profes
 import { ProfessorProfile } from "@/components/professor/professor-profile";
 import { notFound } from "next/navigation";
 
-export default async function ProfessorProfilePage({
-  params,
-}: {
-  params: { id: string };
-}) {
-  const result = await getProfessorDetails(params.id);
+interface PageProps {
+  params: Promise<{
+    id: string;
+  }>;
+}
 
+export default async function ProfessorProfilePage({ params }: PageProps) {
+  // Await the params since they're now a Promise in Next.js 15
+  const { id } = await params;
+  
+  const result = await getProfessorDetails(id);
+  
   if (!result.success || !result.details) {
     notFound();
   }
