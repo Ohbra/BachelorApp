@@ -1,6 +1,6 @@
 import { describe, it, expect, beforeEach, vi } from 'vitest';
 import { getProfessors } from '../../backend/actions/professors/get-professors';
-import { prisma } from '../../backend/prisma/prisma';
+import { prisma } from '@/lib/prisma'
 
 describe('getProfessors', () => {
   beforeEach(() => {

@@ -1,5 +1,4 @@
-import { PrismaClient } from '@/app/backend/generated/prisma'
-const prisma = new PrismaClient()
+import { prisma } from "@/lib/prisma"
 import { NextResponse } from 'next/server'
 
 export async function GET() {

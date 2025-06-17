@@ -1,7 +1,7 @@
 import { prismaTest, cleanupTestResources } from './utils/test-db'
 import { describe, beforeAll, afterAll, it, expect } from 'vitest'
 import '../tests/utils/test-env' 
-import { prisma } from '../backend/prisma/prisma'
+import { prisma } from '@/lib/prisma'
 
 describe('Database CRUD Operations', () => {
   // Test data

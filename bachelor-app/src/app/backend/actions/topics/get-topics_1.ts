@@ -1,6 +1,6 @@
 'use server'
 
-import { prisma } from '../../prisma/prisma'
+import { prisma } from "@/lib/prisma"
 import { RecommendationItem } from '@/app/backend/api/recommendations/route' 
 
 export type Topic = {

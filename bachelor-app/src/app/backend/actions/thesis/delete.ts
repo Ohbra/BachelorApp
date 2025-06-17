@@ -1,7 +1,7 @@
 'use server'
 
 import { z } from 'zod'
-import { prisma } from '@/app/backend/prisma/prisma'
+import { prisma } from "@/lib/prisma"
 import { getUserSession } from '@/app/backend/utils/auth-helpers'
 
 // Validation schema

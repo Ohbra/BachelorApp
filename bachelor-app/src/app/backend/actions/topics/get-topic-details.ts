@@ -1,5 +1,5 @@
 "use server";
-import { prisma } from '../../prisma/prisma';
+import { prisma } from "@/lib/prisma";
 
 export type TopicDetails = {
   id: string;

@@ -1,6 +1,6 @@
 import { describe, it, expect, beforeEach, vi } from 'vitest'
 import { getFieldsFromTags } from '../../backend/actions/fields/get-fields'
-import { prisma } from '../../backend/prisma/prisma'
+import { prisma } from '@/lib/prisma'
 
 const mockTags = [
   { tag_name: 'Artificial Intelligence' },

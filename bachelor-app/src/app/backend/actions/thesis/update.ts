@@ -1,7 +1,7 @@
 'use server'
 
 import { z } from "zod"
-import { prisma } from "../../prisma/prisma"
+import { prisma } from "@/lib/prisma"
 import { getPredefinedTags } from '@/app/backend/lib/tagsCache'
 import { getUserSession } from '@/app/backend/utils/auth-helpers'
 

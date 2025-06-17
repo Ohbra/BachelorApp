@@ -1,7 +1,7 @@
 "use server";
 
 import { createClient } from "../../utils/server";
-import { prisma } from "../../prisma/prisma";
+import { prisma } from "@/lib/prisma";
 
 export type StudentProfile = {
   id: string;
