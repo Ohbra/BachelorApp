@@ -11,10 +11,10 @@ export async function GET(req: Request) {
   const role = searchParams.get('role');
   const userId = searchParams.get('userId'); // needed for supervisor filtering
 
-  const whereCondition =
-    role === 'supervisor' && userId
-      ? { supervisor_id: parseInt(userId, 10) }
-      : {};
+const whereCondition =
+  role === 'supervisor' && userId
+    ? { supervisor_id: userId }
+    : {};
 
   const proposals = await prisma.thesis_proposal.findMany({
     where: whereCondition,
