@@ -1,4 +1,5 @@
-import { PrismaClient } from '../../backend/prisma/node_modules/@prisma/client'
+
+import { PrismaClient } from '@prisma/client'
 import './test-env' 
 // Create a singleton instance of PrismaClient for tests
 export const prismaTest = new PrismaClient()
