@@ -244,13 +244,16 @@ export async function getTopics(
     }
   } catch (error) {
     console.error("Error fetching topics:", error)
+    console.error("Error fetching topics:", error instanceof Error ? error.message : error)
+
     return {
       success: false,
-      message: "Failed to fetch topics",
+      message: (error as Error).message || "Unknown error",
       topics: [],
       totalCount: 0,
       totalPages: 0,
       currentPage: page,
     }
+
   }
 }
